@@ -1,0 +1,4 @@
+{
+	// This setting allows you to load the tsconfig schema from the Schema Store.
+	"json.schemaDownload.enable": true
+}

@@ -1,0 +1,139 @@
+{
+	"root": true,
+	"env": {
+		"browser": true,
+		"es2021": true,
+		"node": true
+	},
+	"plugins": ["@typescript-eslint", "@angular-eslint"],
+	"overrides": [
+		{
+			"files": ["*.ts"],
+			"extends": [
+				"eslint:recommended",
+				"plugin:@typescript-eslint/recommended",
+				"plugin:@angular-eslint/recommended"
+			],
+			"parser": "@typescript-eslint/parser",
+			"parserOptions": {
+				"ecmaVersion": 2021,
+				"sourceType": "module",
+				"project": ["tsconfig.app.json"]
+			},
+			"rules": {
+				"@angular-eslint/component-class-suffix": "off",
+				"@angular-eslint/component-selector": [
+					"error",
+					{
+						"type": "element",
+						"prefix": "app",
+						"style": "kebab-case"
+					}
+				],
+				"@angular-eslint/directive-selector": [
+					"error",
+					{
+						"type": "attribute",
+						"prefix": "app",
+						"style": "camelCase"
+					}
+				],
+				"@angular-eslint/no-empty-lifecycle-method": "error",
+				"@angular-eslint/no-input-rename": "off",
+				"@angular-eslint/use-lifecycle-interface": "error",
+				"@typescript-eslint/explicit-module-boundary-types": [
+					"warn",
+					{
+						"allowArgumentsExplicitlyTypedAsAny": true
+					}
+				],
+				"@typescript-eslint/no-empty-function": "off",
+				"@typescript-eslint/no-explicit-any": "off",
+				"arrow-body-style": ["error", "as-needed"],
+				"arrow-spacing": "error",
+				"block-spacing": ["error", "always"],
+				"brace-style": ["error", "stroustrup", { "allowSingleLine": true }],
+				"camelcase": "warn",
+				"comma-spacing": ["error", { "after": true, "before": false }],
+				"comma-style": ["error", "last"],
+				"eol-last": ["error", "always"],
+				"func-call-spacing": ["error", "never"],
+				"indent": [
+					"error",
+					"tab",
+					{ "SwitchCase": 1, "ignoredNodes": ["PropertyDefinition"] }
+				],
+				"key-spacing": ["error", { "afterColon": true, "mode": "strict" }],
+				"keyword-spacing": [
+					"error",
+					{
+						"after": true,
+						"before": true,
+						"overrides": {
+							"for": { "after": false },
+							"while": { "after": false }
+						}
+					}
+				],
+				"max-len": [
+					"error",
+					{
+						"code": 180,
+						"ignoreUrls": true,
+						"ignoreComments": true,
+						"ignoreTrailingComments": true,
+						"ignoreStrings": true,
+						"ignoreTemplateLiterals": true,
+						"ignoreRegExpLiterals": true
+					}
+				],
+				"max-nested-callbacks": ["error", { "max": 7 }],
+				"new-parens": "error",
+				"no-confusing-arrow": ["error", { "allowParens": true }],
+				"no-console": "off",
+				"no-constant-condition": ["error", { "checkLoops": false }],
+				"no-empty-function": ["error", { "allow": ["constructors"] }],
+				"no-global-assign": "error",
+				"no-lonely-if": "error",
+				"no-prototype-builtins": "off",
+				"no-self-compare": "error",
+				"no-shadow-restricted-names": "error",
+				"no-trailing-spaces": "error",
+				"no-unneeded-ternary": "error",
+				"no-unreachable": "error",
+				"no-useless-computed-key": "error",
+				"no-useless-concat": "error",
+				"no-useless-escape": "error",
+				"no-useless-rename": "error",
+				"no-var": "error",
+				"no-whitespace-before-property": "error",
+				"object-curly-spacing": ["error", "always"],
+				"object-shorthand": ["error", "always"],
+				"operator-assignment": ["error", "always"],
+				"prefer-const": "error",
+				"prefer-rest-params": "error",
+				"prefer-spread": "error",
+				"quotes": ["error", "single"],
+				"rest-spread-spacing": ["error", "never"],
+				"semi": ["error", "always"],
+				"semi-spacing": ["error", { "after": true, "before": false }],
+				"space-before-blocks": ["error", "always"],
+				"space-in-parens": ["error", "never"],
+				"space-infix-ops": "error",
+				"space-unary-ops": ["error", { "nonwords": false, "words": true }],
+				"spaced-comment": ["error", "always"],
+				"template-curly-spacing": ["error", "never"]
+			}
+		},
+		{
+			"files": ["*.html"],
+			"extends": ["plugin:@angular-eslint/template/recommended"],
+			"parser": "@angular-eslint/template-parser",
+			"rules": {
+				"@angular-eslint/template/banana-in-box": "error",
+				"@angular-eslint/template/no-duplicate-attributes": "error",
+				"@angular-eslint/template/eqeqeq": "off"
+			}
+		}
+	]
+}

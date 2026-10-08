@@ -1,0 +1,277 @@
+@let t = i18n.t();
+@let draftValue = draft();
+@let suggested = suggestion();
+@let activeId = store.config()?.id;
+
+<div class="fixed inset-0 z-40 flex justify-end">
+	<div class="absolute inset-0 bg-ink/40" (click)="saving() ? null : closed.emit()"></div>
+	<section
+		#panel
+		tabindex="-1"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="settings-title"
+		class="drawer relative z-10 flex h-dvh w-full max-w-md flex-col overflow-y-auto bg-raised text-ink shadow-2xl"
+	>
+		<header
+			class="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-line bg-raised/95 px-5 py-4 backdrop-blur"
+		>
+			<div>
+				<h2 id="settings-title" class="text-3xl leading-none font-semibold">
+					@if (screen() === 'list') {
+						{{ t.keysTitle }}
+					} @else if (editing()) {
+						{{ t.editKey }}
+					} @else {
+						{{ t.newKey }}
+					}
+				</h2>
+				<p class="mt-2 text-sm text-muted">{{ t.settingsLead }}</p>
+			</div>
+			<button
+				type="button"
+				class="focus-ring grid size-10 place-items-center rounded-full bg-sunken"
+				(click)="closed.emit()"
+				[attr.aria-label]="t.close"
+			>
+				<app-icon name="close" class="size-5" />
+			</button>
+		</header>
+
+		@if (screen() === 'list') {
+			<div class="flex flex-1 flex-col gap-3 px-5 py-5">
+				@for (item of store.connections(); track item.id) {
+					<div
+						class="key-card flex cursor-pointer flex-col p-4 text-left"
+						[class.is-active]="item.id === activeId"
+						(click)="choose(item)"
+					>
+						<div class="flex items-start justify-between gap-3">
+							<div class="min-w-0">
+								<p class="truncate text-lg font-semibold">{{ item.bucket }}</p>
+								<p class="mt-1 text-sm text-muted">
+									{{ t[providerLabelKey(item.provider)] }} · {{ item.region }}
+								</p>
+								<p class="mt-1 truncate font-mono text-xs text-muted">
+									{{ item.accessKeyId }}
+								</p>
+							</div>
+							@if (item.id === activeId) {
+								<span class="shrink-0 text-xs font-semibold text-accent">{{
+									t.inUse
+								}}</span>
+							}
+						</div>
+						<div class="mt-auto flex gap-2 pt-4">
+							<button
+								type="button"
+								class="btn btn-quiet"
+								(click)="openEdit(item, $event)"
+								[disabled]="saving()"
+							>
+								<app-icon name="pencil" class="size-4" />
+								{{ t.edit }}
+							</button>
+							<button
+								type="button"
+								class="btn btn-quiet text-danger"
+								(click)="remove(item, $event)"
+								[disabled]="saving()"
+							>
+								<app-icon name="trash" class="size-4" />
+								{{ confirmDeleteId() === item.id ? t.removeConfirm : t.deleteKey }}
+							</button>
+						</div>
+					</div>
+				}
+				<div
+					class="key-card is-add flex cursor-pointer flex-col items-center justify-center gap-2 text-sm font-semibold"
+					role="button"
+					tabindex="0"
+					(click)="openCreate()"
+					(keydown.enter)="openCreate()"
+					(keydown.space)="$event.preventDefault(); openCreate()"
+				>
+					<app-icon name="plus" class="size-5" />
+					{{ t.addConnection }}
+				</div>
+				@if (formError(); as error) {
+					<div
+						class="rounded-2xl bg-danger-soft px-4 py-3 text-sm text-danger"
+						role="alert"
+					>
+						<p>{{ errorText(t) }}</p>
+						@if (error.code) {
+							<p class="mt-1 font-mono text-xs">{{ error.code }}</p>
+						}
+					</div>
+				}
+			</div>
+		} @else {
+			<form
+				class="flex flex-1 flex-col gap-4 px-5 py-5"
+				(submit)="save($event)"
+				autocomplete="off"
+			>
+				<label class="block">
+					<span class="label">{{ t.provider }}</span>
+					<select
+						#providerSelect
+						class="field"
+						name="provider"
+						(change)="onProvider($event)"
+					>
+						@for (provider of providers; track provider) {
+							<option
+								[value]="provider"
+								[selected]="provider === draftValue.provider"
+							>
+								{{ t[providerLabelKey(provider)] }}
+							</option>
+						}
+					</select>
+				</label>
+
+				<label class="block">
+					<span class="label">{{ t.bucket }}</span>
+					<input
+						class="field"
+						[class.field-bad]="fieldError('bucket', t)"
+						name="bucket"
+						[value]="draftValue.bucket"
+						(input)="onBucket($event)"
+						autocomplete="off"
+						spellcheck="false"
+						placeholder="my-bucket"
+					/>
+					@if (fieldError('bucket', t); as message) {
+						<span class="field-error">{{ message }}</span>
+					}
+				</label>
+
+				<label class="block">
+					<span class="label">{{ t.region }}</span>
+					<select #regionSelect class="field" name="region" (change)="onRegion($event)">
+						@for (region of regions(); track region.id) {
+							<option
+								[value]="region.id"
+								[selected]="region.id === draftValue.region"
+							>
+								{{ region.label }} · {{ region.id }}
+							</option>
+						}
+					</select>
+					@if (suggested && suggested === draftValue.region) {
+						<span class="mt-1 block text-xs text-ok">{{ t.regionGuess }}</span>
+					}
+					@if (suggested && suggested !== draftValue.region) {
+						<button
+							type="button"
+							class="mt-2 text-sm font-semibold text-accent"
+							(click)="applySuggestion()"
+						>
+							{{ t.useRegion }}: {{ suggested }}
+						</button>
+					}
+				</label>
+
+				<label class="block">
+					<span class="label">{{ t.endpoint }}</span>
+					<span class="flex items-center gap-2">
+						<span class="text-sm text-muted">https://</span>
+						<input
+							class="field min-w-0"
+							[class.field-bad]="fieldError('endpoint', t)"
+							name="endpoint"
+							[value]="draftValue.endpoint"
+							(input)="onEndpoint($event)"
+							autocomplete="off"
+							spellcheck="false"
+							[attr.placeholder]="draftValue.endpoint"
+						/>
+					</span>
+					<span class="mt-1 block text-xs text-muted">{{ t.endpointHint }}</span>
+					@if (fieldError('endpoint', t); as message) {
+						<span class="field-error">{{ message }}</span>
+					}
+				</label>
+
+				<label class="block">
+					<span class="label">{{ t.accessKeyId }}</span>
+					<input
+						class="field font-mono"
+						[class.field-bad]="fieldError('accessKeyId', t)"
+						name="accessKeyId"
+						[value]="draftValue.accessKeyId"
+						(input)="onAccessKey($event)"
+						autocomplete="off"
+						spellcheck="false"
+						autocapitalize="off"
+						placeholder="004…"
+					/>
+					@if (fieldError('accessKeyId', t); as message) {
+						<span class="field-error">{{ message }}</span>
+					}
+				</label>
+
+				<label class="block">
+					<span class="label">{{ t.secret }}</span>
+					<span class="relative block">
+						<input
+							class="field field-secret"
+							[class.field-bad]="fieldError('secret', t)"
+							name="secret"
+							[type]="showSecret() ? 'text' : 'password'"
+							[value]="draftValue.secretAccessKey"
+							(input)="onSecret($event)"
+							autocomplete="new-password"
+							spellcheck="false"
+							[attr.placeholder]="hasStoredSecret() ? t.storedPlaceholder : ''"
+						/>
+						<button
+							type="button"
+							class="focus-ring absolute top-1/2 right-2 grid size-8 -translate-y-1/2 place-items-center rounded-full text-muted"
+							(click)="showSecret.update((shown) => !shown)"
+							[attr.aria-label]="showSecret() ? t.hideSecret : t.showSecret"
+						>
+							<app-icon [name]="showSecret() ? 'eyeOff' : 'eye'" class="size-4" />
+						</button>
+					</span>
+					@if (hasStoredSecret()) {
+						<span class="mt-1 block text-xs text-muted">{{ t.storedSecret }}</span>
+					}
+					@if (fieldError('secret', t); as message) {
+						<span class="field-error">{{ message }}</span>
+					}
+					<span class="mt-1 block text-xs text-muted">{{ t.permissionHint }}</span>
+				</label>
+
+				@if (formError(); as error) {
+					<div
+						class="rounded-2xl bg-danger-soft px-4 py-3 text-sm text-danger"
+						role="alert"
+					>
+						<p>{{ errorText(t) }}</p>
+						@if (error.code) {
+							<p class="mt-1 font-mono text-xs">{{ error.code }}</p>
+						}
+					</div>
+				}
+
+				<div class="mt-auto flex flex-wrap items-center gap-2 pt-2">
+					<button type="submit" class="btn btn-primary" [disabled]="saving()">
+						{{ saving() ? t.saving : t.save }}
+					</button>
+					<button
+						type="button"
+						class="btn btn-quiet"
+						(click)="store.connections().length ? back() : closed.emit()"
+						[disabled]="saving()"
+					>
+						{{ store.connections().length ? t.backToKeys : t.cancel }}
+					</button>
+				</div>
+			</form>
+		}
+	</section>
+</div>

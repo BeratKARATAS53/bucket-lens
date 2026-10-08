@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="tr">
+	<head>
+		<meta charset="utf-8" />
+		<title>BucketLens | Backblaze, Wasabi, S3 Filesystem</title>
+		<base href="/" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="theme-color" content="#efeae1" />
+		<link rel="icon" href="logo.png" type="image/png" />
+		<script>
+			(() => {
+				try {
+					const theme = localStorage.getItem('bucket-lens.theme');
+					const dark =
+						theme === 'dark' ||
+						(theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+					document.documentElement.classList.toggle('dark', dark);
+					const meta = document.querySelector('meta[name="theme-color"]');
+					if (meta) meta.setAttribute('content', dark ? '#131512' : '#efeae1');
+					const stored = localStorage.getItem('bucket-lens.lang');
+					const lang =
+						stored === 'en' || stored === 'tr'
+							? stored
+							: (navigator.language || '').toLowerCase().startsWith('tr')
+								? 'tr'
+								: 'en';
+					document.documentElement.lang = lang;
+				} catch {
+					/* storage can be blocked */
+				}
+			})();
+		</script>
+	</head>
+	<body>
+		<app-root></app-root>
+	</body>
+</html>

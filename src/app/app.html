@@ -1,0 +1,495 @@
+@let t = i18n.t();
+@let lang = i18n.lang();
+@let cfg = store.config();
+@let deep = searchMode() === 'deep';
+
+<div class="relative min-h-dvh">
+	<div class="pointer-events-none fixed inset-0 -z-10">
+		<div
+			class="absolute -top-24 right-[-4rem] size-80 rounded-full bg-accent/15 blur-3xl"
+		></div>
+		<div
+			class="absolute bottom-0 left-[-3rem] size-64 rounded-full bg-accent/10 blur-3xl"
+		></div>
+	</div>
+
+	<header class="sticky top-0 z-20 border-b border-line bg-bg/85 backdrop-blur-md">
+		<div class="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
+			<button
+				type="button"
+				class="focus-ring flex items-center gap-3 rounded-2xl pr-2"
+				(click)="goHome()"
+			>
+				<img
+					src="logo.png"
+					alt=""
+					class="h-10 w-auto"
+					width="323"
+					height="307"
+				/>
+				<span class="text-left">
+					<span class="block font-display text-[1.7rem] leading-tight">BucketLens</span>
+					<span class="mt-1 hidden text-xs text-muted sm:block">{{ t.tagline }}</span>
+				</span>
+			</button>
+
+			@if (cfg) {
+				<span
+					class="inline-flex max-w-full items-center gap-2 rounded-full bg-raised px-3 py-1.5 text-sm ring-1 ring-line"
+				>
+					<app-icon name="bucket" class="size-4 text-accent" />
+					<span class="max-w-40 truncate font-medium">{{ cfg.bucket }}</span>
+					<span class="truncate text-muted"
+						>{{ t[providerLabelKey(cfg.provider)] }} · {{ cfg.region }}</span
+					>
+				</span>
+			}
+
+			<div class="ml-auto flex items-center gap-2">
+				<div
+					class="flex rounded-full bg-sunken p-1 text-xs font-semibold"
+					role="group"
+					[attr.aria-label]="lang === 'tr' ? 'Dil' : 'Language'"
+				>
+					<button
+						type="button"
+						class="focus-ring rounded-full px-2.5 py-1"
+						[class.bg-raised]="lang === 'tr'"
+						[class.text-muted]="lang !== 'tr'"
+						[attr.aria-pressed]="lang === 'tr'"
+						(click)="i18n.set('tr')"
+					>
+						TR
+					</button>
+					<button
+						type="button"
+						class="focus-ring rounded-full px-2.5 py-1"
+						[class.bg-raised]="lang === 'en'"
+						[class.text-muted]="lang !== 'en'"
+						[attr.aria-pressed]="lang === 'en'"
+						(click)="i18n.set('en')"
+					>
+						EN
+					</button>
+				</div>
+				<button
+					type="button"
+					class="focus-ring grid size-10 place-items-center rounded-full bg-raised ring-1 ring-line"
+					(click)="theme.toggle()"
+					[attr.aria-label]="theme.mode() === 'dark' ? t.themeToLight : t.themeToDark"
+				>
+					<app-icon [name]="theme.mode() === 'dark' ? 'sun' : 'moon'" class="size-5" />
+				</button>
+				<button type="button" class="btn btn-quiet" (click)="openSettings()">
+					<app-icon name="settings" class="size-4" />
+					<span class="hidden sm:inline">{{ t.settings }}</span>
+				</button>
+			</div>
+		</div>
+	</header>
+
+	<main class="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+		@if (!store.ready()) {
+			<div class="flex flex-col gap-4" aria-busy="true">
+				<div class="h-5 w-48 animate-pulse rounded-full bg-sunken"></div>
+				<div class="h-11 animate-pulse rounded-full bg-sunken"></div>
+				<div class="flex gap-2">
+					<div class="h-8 w-16 animate-pulse rounded-full bg-sunken"></div>
+					<div class="h-8 w-24 animate-pulse rounded-full bg-sunken"></div>
+					<div class="h-8 w-20 animate-pulse rounded-full bg-sunken"></div>
+					<div class="h-8 w-16 animate-pulse rounded-full bg-sunken"></div>
+				</div>
+				<ng-container [ngTemplateOutlet]="catalogSkeleton" />
+			</div>
+		} @else if (!cfg) {
+			<section
+				class="mx-auto flex min-h-[68dvh] max-w-xl flex-col items-center justify-center text-center"
+			>
+				<img
+					src="logo.png"
+					alt=""
+					class="h-24 w-auto"
+					width="323"
+					height="307"
+				/>
+				<h1 class="mt-6 text-5xl leading-none font-semibold">{{ t.welcomeTitle }}</h1>
+				<p class="mt-4 text-pretty text-muted">{{ t.welcomeBody }}</p>
+				<button type="button" class="btn btn-primary mt-6" (click)="openSettings()">
+					{{ t.addKey }}
+				</button>
+				<p class="mt-4 text-xs text-muted">{{ t.localOnly }}</p>
+			</section>
+		} @else {
+			<div class="flex flex-col gap-4">
+				<div class="flex flex-wrap items-center gap-2">
+					<nav
+						class="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto text-sm"
+						[attr.aria-label]="cfg.bucket"
+					>
+						<button
+							type="button"
+							class="focus-ring shrink-0 rounded-md px-1 font-medium"
+							[class.text-muted]="prefix()"
+							(click)="goTo('')"
+						>
+							{{ cfg.bucket }}
+						</button>
+						@for (crumb of crumbs(); track crumb.prefix) {
+							<span class="text-muted">/</span>
+							@if (crumb.prefix === prefix()) {
+								<span class="truncate font-semibold">{{ crumb.name }}</span>
+							} @else {
+								<button
+									type="button"
+									class="focus-ring shrink-0 rounded-md px-1 font-medium text-muted"
+									(click)="goTo(crumb.prefix)"
+								>
+									{{ crumb.name }}
+								</button>
+							}
+						}
+					</nav>
+					@if (prefix()) {
+						<button type="button" class="btn btn-quiet" (click)="goUp()">
+							<app-icon name="back" class="size-4" />
+							{{ t.up }}
+						</button>
+					}
+					<button
+						type="button"
+						class="btn btn-quiet"
+						(click)="refresh()"
+						[disabled]="loading()"
+						[attr.aria-label]="t.refresh"
+					>
+						<app-icon name="refresh" class="size-4" />
+						<span class="hidden sm:inline">{{ t.refresh }}</span>
+					</button>
+				</div>
+
+				<div class="flex flex-col gap-3 lg:flex-row lg:items-center">
+					<label class="relative min-w-0 flex-1">
+						<span class="sr-only">{{ t.searchPlaceholder }}</span>
+						<span
+							class="pointer-events-none absolute top-1/2 left-3 z-10 grid size-4 -translate-y-1/2 text-muted"
+						>
+							<app-icon name="search" class="size-4" />
+						</span>
+						<input
+							#searchBox
+							class="field field-search"
+							type="search"
+							[value]="query()"
+							(input)="onQuery($event)"
+							[attr.placeholder]="t.searchPlaceholder"
+							[attr.aria-label]="t.searchPlaceholder"
+							autocomplete="off"
+							spellcheck="false"
+						/>
+						@if (query()) {
+							<button
+								type="button"
+								class="focus-ring absolute top-1/2 right-2 grid size-8 -translate-y-1/2 place-items-center rounded-full text-muted"
+								(click)="clearQuery()"
+								[attr.aria-label]="t.clearSearch"
+							>
+								<app-icon name="close" class="size-4" />
+							</button>
+						}
+					</label>
+					<button
+						type="button"
+						role="switch"
+						class="focus-ring flex items-center gap-2 rounded-full px-1 py-1 text-sm font-medium"
+						[attr.aria-checked]="includeSubfolders()"
+						(click)="includeSubfolders.update((value) => !value)"
+					>
+						<span
+							class="switch-track relative h-6 w-10 rounded-full transition"
+							[class.is-on]="includeSubfolders()"
+						>
+							<span
+								class="switch-knob absolute top-0.5 left-0.5 size-5 rounded-full shadow transition"
+								[class.is-on]="includeSubfolders()"
+							></span>
+						</span>
+						{{ t.subfolders }}
+					</button>
+					<label class="md:hidden">
+						<span class="sr-only">{{ t.sortName }}</span>
+						<select
+							class="field field-inline"
+							[value]="sortKey()"
+							(change)="setSortKey($event)"
+						>
+							<option value="name">{{ t.sortName }}</option>
+							<option value="size">{{ t.sortSize }}</option>
+							<option value="modified">{{ t.sortModified }}</option>
+						</select>
+					</label>
+				</div>
+				<p class="text-xs text-muted">{{ t.subfoldersHint }}</p>
+
+				<div class="flex gap-2 overflow-x-auto pb-1">
+					@for (filter of filters; track filter[0]) {
+						<button
+							type="button"
+							class="chip"
+							[class.chip-on]="kind() === filter[0]"
+							[attr.aria-pressed]="kind() === filter[0]"
+							(click)="setKind(filter[0])"
+						>
+							{{ t[filter[1]] }}
+						</button>
+					}
+				</div>
+
+				<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
+					@if (scanning()) {
+						@if (!queryPending() && visible().length) {
+							<span>{{ formatCount(visible().length, lang) }}</span>
+						}
+						<span role="status">{{ deep ? t.deepProgress : t.scanning }}</span>
+						@if (scanned() > 0) {
+							<span>{{ formatScanned(scanned(), lang) }}</span>
+						}
+					} @else if (loading() && !entries().length) {
+						<span role="status">{{ t.loading }}</span>
+					} @else {
+						<span>{{ formatCount(visible().length, lang) }}</span>
+						@if (filtering() && visible().length !== entries().length) {
+							<span>/ {{ formatCount(entries().length, lang) }}</span>
+						}
+						@if (deep) {
+							<span>{{ formatScanned(entries().length, lang) }}</span>
+						}
+					}
+				</div>
+
+				@if (error() && entries().length) {
+					<div
+						class="flex items-start gap-3 rounded-2xl bg-danger-soft px-4 py-3 text-sm text-danger"
+						role="alert"
+					>
+						<app-icon name="alert" class="mt-0.5 size-4" />
+						<div>
+							<p>{{ messageForError(error()!.kind, t) }}</p>
+							@if (error()!.code) {
+								<p class="mt-1 font-mono text-xs">{{ error()!.code }}</p>
+							}
+						</div>
+					</div>
+				}
+
+				@if (
+					(scanning() && (!entries().length || queryPending())) ||
+					(loading() && !entries().length)
+				) {
+					<ng-container [ngTemplateOutlet]="catalogSkeleton" />
+				} @else if (error() && !entries().length) {
+					<section class="catalog px-6 py-12 text-center" role="alert">
+						<span
+							class="mx-auto grid size-12 place-items-center rounded-2xl bg-danger-soft text-danger"
+						>
+							<app-icon name="alert" class="size-6" />
+						</span>
+						<h2 class="mt-4 text-3xl font-semibold">{{ t.errorTitle }}</h2>
+						<p class="mx-auto mt-2 max-w-md text-sm text-muted">
+							{{ messageForError(error()!.kind, t) }}
+						</p>
+						@if (error()!.code) {
+							<p class="mt-2 font-mono text-xs text-muted">{{ error()!.code }}</p>
+						}
+						<div class="mt-5 flex justify-center gap-2">
+							<button type="button" class="btn btn-primary" (click)="refresh()">
+								{{ t.retry }}
+							</button>
+							<button type="button" class="btn btn-quiet" (click)="openSettings()">
+								{{ t.settings }}
+							</button>
+						</div>
+					</section>
+				} @else if (!visible().length) {
+					<section class="catalog px-6 py-16 text-center">
+						<h2 class="text-3xl font-semibold">
+							{{ filtering() ? t.noMatches : t.emptyFolder }}
+						</h2>
+					</section>
+				} @else {
+					<section class="catalog" aria-busy="false">
+						@if (loading() || loadingMore()) {
+							<div class="h-0.5 overflow-hidden bg-sunken">
+								<div class="loadbar h-full bg-accent"></div>
+							</div>
+						}
+						<div
+							class="hidden items-center px-3 py-2 text-xs font-medium text-muted md:grid md:grid-cols-[minmax(0,1fr)_7.5rem_13.5rem_7rem]"
+						>
+							<button
+								type="button"
+								class="focus-ring flex items-center gap-1 rounded-md text-left"
+								(click)="toggleSort('name')"
+							>
+								{{ t.sortName }}
+								@if (sortKey() === 'name') {
+									<app-icon
+										[name]="sortDir() === 'asc' ? 'chevronUp' : 'chevronDown'"
+										class="size-3.5"
+									/>
+								}
+							</button>
+							<button
+								type="button"
+								class="focus-ring flex items-center gap-1 rounded-md text-left"
+								(click)="toggleSort('size')"
+							>
+								{{ t.sortSize }}
+								@if (sortKey() === 'size') {
+									<app-icon
+										[name]="sortDir() === 'asc' ? 'chevronUp' : 'chevronDown'"
+										class="size-3.5"
+									/>
+								}
+							</button>
+							<button
+								type="button"
+								class="focus-ring flex items-center gap-1 rounded-md text-left"
+								(click)="toggleSort('modified')"
+							>
+								{{ t.sortModified }}
+								@if (sortKey() === 'modified') {
+									<app-icon
+										[name]="sortDir() === 'asc' ? 'chevronUp' : 'chevronDown'"
+										class="size-3.5"
+									/>
+								}
+							</button>
+							<span>{{ t.contentType }}</span>
+						</div>
+						<ul>
+							@for (entry of rendered(); track entry.key) {
+								<li class="border-t border-line first:border-t-0">
+									<button
+										type="button"
+										class="grid w-full min-w-0 grid-cols-1 items-center gap-1 px-3 py-3 text-left transition hover:bg-sunken/80 md:grid-cols-[minmax(0,1fr)_7.5rem_13.5rem_7rem] md:gap-0"
+										(click)="open(entry)"
+									>
+										<span class="flex min-w-0 items-center gap-3">
+											<span
+												class="grid size-10 shrink-0 place-items-center rounded-xl"
+												[class.bg-accent-soft]="entry.kind === 'folder'"
+												[class.text-accent]="entry.kind === 'folder'"
+												[class.bg-sunken]="entry.kind === 'file'"
+												[class.text-muted]="entry.kind === 'file'"
+											>
+												<app-icon [name]="iconFor(entry)" class="size-5" />
+											</span>
+											<span class="min-w-0">
+												<span
+													class="block truncate font-medium"
+													[attr.title]="rowLabel(entry)"
+													>{{ rowLabel(entry) }}</span
+												>
+												<span
+													class="mt-0.5 block truncate text-xs text-muted md:hidden"
+												>
+													{{
+														entry.kind === 'folder'
+															? t.kindFolder
+															: formatBytes(entry.size, lang)
+													}}
+													·
+													{{
+														formatDate(
+															entry.lastModified,
+															lang,
+															'short'
+														)
+													}}
+												</span>
+											</span>
+										</span>
+										<span
+											class="hidden text-sm text-muted tabular-nums md:block"
+											>{{
+												entry.kind === 'folder'
+													? '—'
+													: formatBytes(entry.size, lang)
+											}}</span
+										>
+										<span
+											class="hidden text-sm whitespace-nowrap text-muted md:block"
+											>{{
+												formatDate(entry.lastModified, lang, 'short')
+											}}</span
+										>
+										<span class="hidden text-sm text-muted md:block">{{
+											kindLabel(entry, t)
+										}}</span>
+									</button>
+								</li>
+							}
+						</ul>
+					</section>
+				}
+
+				@if (
+					(token() && entries().length && !filtering()) ||
+					rendered().length < visible().length
+				) {
+					<div class="flex flex-wrap items-center gap-3">
+						<button
+							type="button"
+							class="btn btn-quiet"
+							(click)="loadMore()"
+							[disabled]="loadingMore()"
+						>
+							{{ loadingMore() ? t.loading : t.loadMore }}
+						</button>
+						<span class="text-sm text-muted">{{ t.moreRemain }}</span>
+					</div>
+				}
+			</div>
+			<p class="mt-8 text-center text-xs text-muted">{{ t.localOnly }}</p>
+		}
+	</main>
+</div>
+
+<ng-template #catalogSkeleton>
+	<div class="catalog" aria-busy="true">
+		<div class="h-0.5 overflow-hidden bg-sunken">
+			<div class="loadbar h-full bg-accent"></div>
+		</div>
+		<div
+			class="hidden items-center px-3 py-3 md:grid md:grid-cols-[minmax(0,1fr)_7.5rem_13.5rem_7rem]"
+		>
+			<div class="h-3 w-16 animate-pulse rounded-full bg-sunken"></div>
+			<div class="h-3 w-12 animate-pulse rounded-full bg-sunken"></div>
+			<div class="h-3 w-14 animate-pulse rounded-full bg-sunken"></div>
+			<div class="h-3 w-16 animate-pulse rounded-full bg-sunken"></div>
+		</div>
+		@for (row of skeletons; track $index) {
+			<div
+				class="flex animate-pulse items-center gap-3 border-t border-line px-3 py-3 md:grid md:grid-cols-[minmax(0,1fr)_7.5rem_13.5rem_7rem] md:gap-0"
+			>
+				<div class="flex min-w-0 flex-1 items-center gap-3">
+					<div class="size-10 shrink-0 rounded-xl bg-sunken"></div>
+					<div class="min-w-0 flex-1 space-y-2">
+						<div class="h-3 rounded-full bg-sunken" [style.width.%]="row"></div>
+						<div class="h-2 w-1/4 rounded-full bg-sunken md:hidden"></div>
+					</div>
+				</div>
+				<div class="hidden h-3 w-14 rounded-full bg-sunken md:block"></div>
+				<div class="hidden h-3 w-24 rounded-full bg-sunken md:block"></div>
+				<div class="hidden h-3 w-12 rounded-full bg-sunken md:block"></div>
+			</div>
+		}
+	</div>
+</ng-template>
+
+@if (settingsOpen()) {
+	<app-settings-dialog (closed)="settingsOpen.set(false)" />
+}
+@if (selected(); as file) {
+	<app-detail-dialog [entry]="file" (closed)="selected.set(null)" />
+}
