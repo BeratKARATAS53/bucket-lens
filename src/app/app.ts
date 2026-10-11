@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { isCancel } from 'axios';
+import { readStorage, writeStorage } from './helpers/browser-storage';
 import { classifyS3Error } from './helpers/errors';
 import {
 	formatBytes,
@@ -29,6 +30,7 @@ import { BucketEntry, KindFilter, S3Failure, SortKey } from './models/bucket';
 import { DetailDialog } from './components/detail-dialog';
 import { Icon, iconForEntry } from './components/icon';
 import { SettingsDialog } from './components/settings-dialog';
+import { api } from './services/api';
 import { BucketService } from './services/bucket.service';
 import { ConnectionService } from './services/connection.service';
 import { I18nService } from './services/i18n.service';
@@ -81,6 +83,7 @@ export class App {
 	protected readonly loadingMore = signal(false);
 	protected readonly scanned = signal(0);
 	protected readonly error = signal<S3Failure | null>(null);
+	protected readonly update = signal<{ version: string; url: string } | null>(null);
 
 	private readonly appliedQuery = signal('');
 	protected readonly searchMode = computed(() =>
@@ -138,6 +141,7 @@ export class App {
 			return;
 		}
 		void this.store.load();
+		if (!this.demo) void this.lookForUpdate();
 		effect(() => {
 			document.body.style.overflow = this.settingsOpen() || this.selected() ? 'hidden' : '';
 		});
@@ -190,6 +194,24 @@ export class App {
 
 	protected rowLabel(entry: BucketEntry, deep = this.searchMode() === 'deep'): string {
 		return deep ? entry.relative || entry.name : entry.name;
+	}
+
+	protected dismissUpdate(): void {
+		const version = this.update()?.version;
+		if (version) writeStorage(updateSeenKey, version);
+		this.update.set(null);
+	}
+
+	private async lookForUpdate(): Promise<void> {
+		try {
+			const { data } = await api.get<UpdateNotice>('/update');
+			const version = typeof data.latest === 'string' ? data.latest : '';
+			const url = typeof data.url === 'string' ? data.url : '';
+			if (!version || !isReleasePage(url) || readStorage(updateSeenKey) === version) return;
+			this.update.set({ version, url });
+		} catch {
+			/* The desktop app stays quiet when the release page cannot be reached. */
+		}
 	}
 
 	protected openSettings(): void {
@@ -360,6 +382,26 @@ export class App {
 				this.loadingMore.set(false);
 			}
 		}
+	}
+}
+
+const updateSeenKey = 'bucket-lens.update';
+const releaseRoot = 'https://github.com/BeratKARATAS53/BucketLens/releases';
+
+type UpdateNotice = { latest?: unknown; url?: unknown };
+
+function isReleasePage(value: string): boolean {
+	try {
+		const url = new URL(value);
+		const page = url.origin + url.pathname;
+		return (
+			url.protocol === 'https:' &&
+			!url.username &&
+			!url.password &&
+			(page === releaseRoot || page.startsWith(`${releaseRoot}/`))
+		);
+	} catch {
+		return false;
 	}
 }
 

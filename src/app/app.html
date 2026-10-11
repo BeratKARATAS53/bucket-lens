@@ -94,6 +94,32 @@
 				}
 			</div>
 		</div>
+		@if (update(); as note) {
+			<div class="border-t border-line bg-accent-soft">
+				<div class="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2 text-sm sm:px-6">
+					<p class="min-w-0">
+						{{ t.updateReady }}
+						<span class="font-semibold">{{ note.version }}</span>
+					</p>
+					<a
+						class="focus-ring shrink-0 rounded-full px-3 py-1 font-semibold text-accent"
+						[href]="note.url"
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						{{ t.updateGet }}
+					</a>
+					<button
+						type="button"
+						class="focus-ring ml-auto grid size-8 shrink-0 place-items-center rounded-full"
+						(click)="dismissUpdate()"
+						[attr.aria-label]="t.updateDismiss"
+					>
+						<app-icon name="close" class="size-4" />
+					</button>
+				</div>
+			</div>
+		}
 	</header>
 
 	<main class="mx-auto max-w-6xl px-4 py-6 sm:px-6">

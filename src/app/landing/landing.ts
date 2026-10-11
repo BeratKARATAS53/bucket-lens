@@ -50,6 +50,7 @@ export class Landing {
 		{ q: 'faqPrice', a: 'faqPriceA' },
 		{ q: 'faqKey', a: 'faqKeyA' },
 		{ q: 'faqDemo', a: 'faqDemoA' },
+		{ q: 'faqSmart', a: 'faqSmartA' },
 	];
 	protected readonly openFaq = signal<keyof Dictionary | null>(null);
 

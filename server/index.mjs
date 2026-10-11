@@ -6,6 +6,7 @@ import { KeystoreError } from './keystore.mjs';
 import { serveStatic } from './static.mjs';
 import { createConnectionStore, defaultConnectionPath, publicStore } from './store.mjs';
 import { headObject, listObjects, openDownload, searchObjects, S3RequestError } from './s3.mjs';
+import { checkForUpdate, lookupGitHubRelease, readAppVersion } from './update.mjs';
 
 export function startServer({
 	port = 4215,
@@ -13,6 +14,8 @@ export function startServer({
 	staticRoot = null,
 	dataDir = null,
 	keystore = null,
+	version = readAppVersion(),
+	releaseLookup = lookupGitHubRelease,
 } = {}) {
 	const store = createConnectionStore({
 		filePath: dataDir ? join(dataDir, 'connection.json') : defaultConnectionPath(),
@@ -21,6 +24,10 @@ export function startServer({
 	const server = createServer(async (req, res) => {
 		try {
 			const url = new URL(req.url ?? '/', 'http://127.0.0.1');
+			if (req.method === 'GET' && url.pathname === '/api/update') {
+				send(res, 200, await checkForUpdate(version, releaseLookup));
+				return;
+			}
 			if (req.method === 'GET' && url.pathname === '/api/connection') {
 				send(res, 200, publicStore(await store.readStore()));
 				return;

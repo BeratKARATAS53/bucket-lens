@@ -113,6 +113,9 @@ const tr = {
 	landingShot: 'Kovadaki dosya listesi',
 	demoMark: 'Demo',
 	demoNote: 'Bu bir örnek liste. Anahtar eklenemez.',
+	updateReady: 'Yeni sürüm hazır:',
+	updateGet: 'İndir',
+	updateDismiss: 'Gizle',
 	landingNoMac: 'macOS için kurulum yok.',
 	landingPointBrowse: 'Klasörlerde gezin, ada göre ara, türe göre süz.',
 	landingPointDetail: 'Dosyaya tıklayınca ayrıntısı açılır. İndirme de oradan başlar.',
@@ -127,6 +130,9 @@ const tr = {
 	faqSystems: 'Hangi sistemler destekleniyor?',
 	faqSystemsA:
 		'Windows kurulum dosyasıyla gelir. Debian ve Ubuntu için deb paketi vardır. Diğer Linux dağıtımlarında tek dosya yeter. macOS için kurulum yok.',
+	faqSmart: 'Windows kurulumu Akıllı Uygulama Denetimi yüzünden açılmıyor',
+	faqSmartA:
+		'Windows Güvenliği’nde Uygulama ve tarayıcı denetimi bölümünü aç, Akıllı Uygulama Denetimi ayarlarından denetimi kapat. Kurulum bitince aynı yerden yeniden açabilirsin.',
 	faqPrice: 'Kayıt olmalı mıyım? Ücretli mi?',
 	faqPriceA:
 		'Hesap açmana gerek yok, ücret de yok. Kendi Backblaze B2, Wasabi veya Amazon S3 anahtarınla bağlanırsın.',
@@ -260,6 +266,9 @@ const en: { [K in keyof typeof tr]: string } = {
 	landingShot: 'The file list inside a bucket',
 	demoMark: 'Demo',
 	demoNote: 'This is a sample list. You cannot add a key.',
+	updateReady: 'A newer version is ready:',
+	updateGet: 'Download',
+	updateDismiss: 'Hide',
 	landingNoMac: 'There is no macOS download.',
 	landingPointBrowse: 'Move through folders, search by name, and filter by type.',
 	landingPointDetail: 'Click a file to open its details. The download starts there.',
@@ -274,6 +283,9 @@ const en: { [K in keyof typeof tr]: string } = {
 	faqSystems: 'Which systems are supported?',
 	faqSystemsA:
 		'Windows comes with an installer. Debian and Ubuntu use a deb package. Other Linux distributions can run the single file. There is no macOS download.',
+	faqSmart: 'Windows will not install because Smart App Control is on',
+	faqSmartA:
+		'Open App & browser control in Windows Security, then turn Smart App Control off in its settings. When the install is finished, turn it back on in the same place.',
 	faqPrice: 'Do I need an account? Is it paid?',
 	faqPriceA:
 		'There is no account to create and no fee. You connect with your own Backblaze B2, Wasabi, or Amazon S3 key.',
