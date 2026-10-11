@@ -2,7 +2,11 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const releaseRoot = 'https://github.com/BeratKARATAS53/BucketLens/releases';
+const releaseApi = 'https://api.github.com/repos/BeratKARATAS53/bucket-lens/releases/latest';
+const releaseRoots = [
+	'https://github.com/beratkaratas53/bucket-lens/releases',
+	'https://github.com/beratkaratas53/bucketlens/releases',
+];
 
 export function readAppVersion() {
 	const file = join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json');
@@ -11,7 +15,7 @@ export function readAppVersion() {
 }
 
 export async function lookupGitHubRelease(signal) {
-	const response = await fetch(`${releaseRoot}/latest`, {
+	const response = await fetch(releaseApi, {
 		headers: {
 			Accept: 'application/vnd.github+json',
 			'User-Agent': 'bucket-lens',
@@ -75,7 +79,8 @@ function releasePage(value) {
 		return null;
 	}
 	if (url.protocol !== 'https:' || url.username || url.password) return null;
-	const page = url.origin + url.pathname;
-	if (page !== releaseRoot && !page.startsWith(`${releaseRoot}/`)) return null;
-	return page;
+	const page = `${url.origin}${url.pathname}`.toLowerCase();
+	const allowed = releaseRoots.some((root) => page === root || page.startsWith(`${root}/`));
+	if (!allowed) return null;
+	return url.origin + url.pathname;
 }

@@ -27,6 +27,17 @@ test('a newer release is reported and the same release stays quiet', () => {
 		describeRelease('0.1.0', { version: '0.2.0', url: 'https://example.com/release' }),
 		{ current: '0.1.0', latest: null, url: null },
 	);
+	assert.deepEqual(
+		describeRelease('0.1.0', {
+			version: 'v0.1.1',
+			url: 'https://github.com/BeratKARATAS53/bucket-lens/releases/tag/v0.1.1',
+		}),
+		{
+			current: '0.1.0',
+			latest: '0.1.1',
+			url: 'https://github.com/BeratKARATAS53/bucket-lens/releases/tag/v0.1.1',
+		},
+	);
 });
 
 test('the update route returns the release page only when a newer version exists', async () => {

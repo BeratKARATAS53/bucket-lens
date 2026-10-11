@@ -388,19 +388,22 @@ export class App {
 }
 
 const updateSeenKey = 'bucket-lens.update';
-const releaseRoot = 'https://github.com/BeratKARATAS53/BucketLens/releases';
+const releaseRoots = [
+	'https://github.com/beratkaratas53/bucket-lens/releases',
+	'https://github.com/beratkaratas53/bucketlens/releases',
+];
 
 type UpdateNotice = { latest?: unknown; url?: unknown };
 
 function isReleasePage(value: string): boolean {
 	try {
 		const url = new URL(value);
-		const page = url.origin + url.pathname;
+		const page = `${url.origin}${url.pathname}`.toLowerCase();
 		return (
 			url.protocol === 'https:' &&
 			!url.username &&
 			!url.password &&
-			(page === releaseRoot || page.startsWith(`${releaseRoot}/`))
+			releaseRoots.some((root) => page === root || page.startsWith(`${root}/`))
 		);
 	} catch {
 		return false;

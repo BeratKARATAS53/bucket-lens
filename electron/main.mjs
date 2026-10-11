@@ -40,9 +40,7 @@ if (!app.requestSingleInstanceLock()) {
 				},
 			});
 			mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-				if (url.startsWith('https://github.com/BeratKARATAS53/BucketLens/releases')) {
-					void shell.openExternal(url);
-				}
+				if (isReleasePage(url)) void shell.openExternal(url);
 				return { action: 'deny' };
 			});
 			await mainWindow.loadURL(`http://127.0.0.1:${address.port}/app?desktop`);
@@ -62,4 +60,24 @@ if (!app.requestSingleInstanceLock()) {
 	app.on('window-all-closed', () => {
 		app.quit();
 	});
+}
+
+const releaseRoots = [
+	'https://github.com/beratkaratas53/bucket-lens/releases',
+	'https://github.com/beratkaratas53/bucketlens/releases',
+];
+
+function isReleasePage(value) {
+	try {
+		const url = new URL(value);
+		const page = `${url.origin}${url.pathname}`.toLowerCase();
+		return (
+			url.protocol === 'https:' &&
+			!url.username &&
+			!url.password &&
+			releaseRoots.some((root) => page === root || page.startsWith(`${root}/`))
+		);
+	} catch {
+		return false;
+	}
 }
