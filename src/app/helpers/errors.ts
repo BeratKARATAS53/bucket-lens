@@ -16,6 +16,7 @@ export function classifyS3Error(error: unknown): S3Failure {
 		return { kind: 'signature', code };
 	}
 	if (code === 'NoSuchKey') return { kind: 'missing', code };
+	if (code === 'KeystoreUnavailable') return { kind: 'keystore', code };
 	if (status === 404 || code === 'NoSuchBucket') return { kind: 'notFound', code };
 	if (
 		status === 401 ||

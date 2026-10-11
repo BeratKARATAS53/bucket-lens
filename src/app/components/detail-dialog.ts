@@ -26,6 +26,7 @@ import { BucketService } from '../services/bucket.service';
 import { ConnectionService } from '../services/connection.service';
 import { I18nService } from '../services/i18n.service';
 import { iconForEntry, Icon } from './icon';
+import { DEMO_MODE } from '../demo/demo';
 
 @Component({
 	selector: 'app-detail-dialog',
@@ -36,6 +37,7 @@ export class DetailDialog {
 	readonly entry = input.required<BucketEntry>();
 	readonly closed = output<void>();
 
+	protected readonly demo = inject(DEMO_MODE, { optional: true }) === true;
 	protected readonly i18n = inject(I18nService);
 	protected readonly iconFor = iconForEntry;
 	protected readonly extensionOf = extensionOf;

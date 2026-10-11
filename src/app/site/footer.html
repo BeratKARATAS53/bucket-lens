@@ -1,0 +1,33 @@
+@let t = i18n.t();
+@let credit = around(t.footerBy);
+
+<footer class="border-t border-line">
+	<div class="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-6 text-sm text-muted sm:px-6">
+		<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+			<p>
+				{{ credit.before }}<a
+					class="focus-ring rounded-full text-accent"
+					[href]="site"
+					target="_blank"
+					rel="noopener noreferrer"
+					>{{ author }}</a
+				>{{ credit.after }}
+			</p>
+			<nav class="flex flex-wrap gap-2" [attr.aria-label]="t.footerLegal">
+				@for (item of links; track item.path) {
+					<a
+						class="focus-ring rounded-full hover:text-ink"
+						[routerLink]="item.path"
+						routerLinkActive="font-medium text-ink"
+					>
+						{{ t[item.label] }}
+					</a>
+					@if (item !== links[links.length - 1]) {
+						<span class="text-muted">·</span>
+					}
+				}
+			</nav>
+			<p>{{ t.footerRights }}</p>
+		</div>
+	</div>
+</footer>

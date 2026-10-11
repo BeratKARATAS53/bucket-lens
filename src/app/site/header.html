@@ -1,0 +1,50 @@
+@let t = i18n.t();
+@let lang = i18n.lang();
+
+<header class="sticky top-0 z-20 border-b border-line bg-bg/85 backdrop-blur-md">
+	<div class="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-6">
+		<a [attr.href]="logoHref()" class="focus-ring flex items-center gap-3 rounded-2xl pr-2 text-left">
+			<img src="logo.png" alt="" class="h-10 w-auto" width="323" height="307" />
+			<span>
+				<span class="block font-display text-[1.7rem] leading-tight">BucketLens</span>
+				<span class="mt-1 hidden text-xs text-muted sm:block">{{ t.tagline }}</span>
+			</span>
+		</a>
+		<div class="ml-auto flex items-center gap-2">
+			<div
+				class="flex rounded-full bg-sunken p-1 text-xs font-semibold"
+				role="group"
+				[attr.aria-label]="lang === 'tr' ? 'Dil' : 'Language'"
+			>
+				<button
+					type="button"
+					class="focus-ring rounded-full px-2.5 py-1"
+					[class.bg-raised]="lang === 'tr'"
+					[class.text-muted]="lang !== 'tr'"
+					[attr.aria-pressed]="lang === 'tr'"
+					(click)="i18n.set('tr')"
+				>
+					TR
+				</button>
+				<button
+					type="button"
+					class="focus-ring rounded-full px-2.5 py-1"
+					[class.bg-raised]="lang === 'en'"
+					[class.text-muted]="lang !== 'en'"
+					[attr.aria-pressed]="lang === 'en'"
+					(click)="i18n.set('en')"
+				>
+					EN
+				</button>
+			</div>
+			<button
+				type="button"
+				class="focus-ring grid size-10 place-items-center rounded-full bg-raised ring-1 ring-line"
+				(click)="theme.toggle()"
+				[attr.aria-label]="theme.mode() === 'dark' ? t.themeToLight : t.themeToDark"
+			>
+				<app-icon [name]="theme.mode() === 'dark' ? 'sun' : 'moon'" class="size-5" />
+			</button>
+		</div>
+	</div>
+</header>

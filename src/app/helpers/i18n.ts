@@ -1,12 +1,12 @@
 const tr = {
 	appTitle: 'BucketLens | Backblaze, Wasabi, S3 Dosya Sistemi',
 	tagline: 'Backblaze, Wasabi ve Amazon S3',
-	localOnly: 'Anahtarlar proje klasöründeki dosyada durur',
+	localOnly: 'Anahtar bu bilgisayarda kalır',
 	settings: 'Ayarlar',
 	addKey: 'Anahtar ekle',
 	welcomeTitle: 'Kovayı aç',
 	welcomeBody:
-		'Uygulama anahtarını arayüzden kaydet. Klasörleri dolaş, dosyayı seç, indir. Anahtar tarayıcıya yazılmaz; yereldeki dosyada tutulur.',
+		'Anahtarını kaydet. Klasörlere gir, dosyayı seç, indir. Anahtar tarayıcıda saklanmaz.',
 	permissionHint: 'Anahtarda listeleme ve okuma izni olmalı.',
 	bucket: 'Kova adı',
 	provider: 'Sağlayıcı',
@@ -32,7 +32,7 @@ const tr = {
 	hideSecret: 'Anahtarı gizle',
 	validationRequired: 'Bu alan gerekli',
 	validationBucket: 'Kova adı boşluk içeremez',
-	errorOffline: 'Yerel sunucuya ulaşılamadı. pnpm start hem arayüzü hem anahtar dosyasını açar.',
+	errorOffline: 'Yerel sunucuya ulaşılamadı.',
 	searchPlaceholder: 'Dosya veya klasör ara',
 	clearSearch: 'Aramayı temizle',
 	subfolders: 'Alt klasörler',
@@ -81,12 +81,14 @@ const tr = {
 	errorMissing: 'Dosya bulunamadı.',
 	errorSignature: 'İmza kabul edilmedi. Gizli anahtarı ve bilgisayar saatini kontrol et.',
 	errorGeneric: 'İstek tamamlanamadı.',
+	errorKeystore:
+		'Anahtar kaydedilemedi. Linux’ta GNOME Keyring veya KWallet açık olmalı.',
 	deepProgress: 'Alt klasörler taranıyor',
 	scanning: 'Tüm nesneler taranıyor',
 	moreRemain: 'Listenin devamı var',
 	themeToDark: 'Koyu görünüm',
 	themeToLight: 'Açık görünüm',
-	settingsLead: 'Anahtarlar data/connection.json dosyasına yazılır. Tarayıcıya kaydedilmez.',
+	settingsLead: 'Anahtar bu bilgisayarda saklanır. Tarayıcıya geri dönmez.',
 	connectionTitle: 'Bağlantı',
 	keysTitle: 'Anahtarlar',
 	newKey: 'Yeni anahtar',
@@ -96,17 +98,62 @@ const tr = {
 	deleteKey: 'Sil',
 	inUse: 'Kullanılıyor',
 	backToKeys: 'Anahtarlar',
+	landingTitle: 'Kovadaki dosyalara kendi bilgisayarından bak',
+	landingLead:
+		'Backblaze B2, Wasabi ve Amazon S3. Klasörleri aç, aradığını bul, indir. Anahtarın bu sitede durmaz; kurduğun uygulamada, senin bilgisayarında kalır.',
+	landingWindows: 'Windows',
+	landingWindowsHint: 'Kurulum',
+	landingDeb: 'Debian ve Ubuntu',
+	landingDebHint: 'deb paketi',
+	landingAppImage: 'Diğer Linux',
+	landingAppImageHint: 'Tek dosya, kurulum yok',
+	landingForYou: 'Bu bilgisayar için',
+	landingReleases: 'Tüm sürümler',
+	landingOpen: 'Demoyu görüntüle',
+	landingShot: 'Kovadaki dosya listesi',
+	demoMark: 'Demo',
+	demoNote: 'Bu bir örnek liste. Anahtar eklenemez.',
+	landingNoMac: 'macOS için kurulum yok.',
+	landingPointBrowse: 'Klasörlerde gezin, ada göre ara, türe göre süz.',
+	landingPointDetail: 'Dosyaya tıklayınca ayrıntısı açılır. İndirme de oradan başlar.',
+	landingPointLocal: 'Türkçe ve İngilizce. İstersen koyu görünüme geç.',
+	faqTitle: 'Sıkça sorulan sorular',
+	faqUse: 'Nasıl kullanılır?',
+	faqUseA:
+		'Uygulamayı indirip kur. Anahtarını kaydet, kova adını yaz. Klasörler açılır; aradığını bulup indirebilirsin. Kurmadan önce dosya listesinin görüntüsüne tıklayarak örnek listeye bakabilirsin.',
+	faqActions: 'Hangi işlemleri yapabilirim?',
+	faqActionsA:
+		'Şimdilik listeleme ve indirme var. Güncelleme, oluşturma ve silme yakın zamanda eklenecek.',
+	faqSystems: 'Hangi sistemler destekleniyor?',
+	faqSystemsA:
+		'Windows kurulum dosyasıyla gelir. Debian ve Ubuntu için deb paketi vardır. Diğer Linux dağıtımlarında tek dosya yeter. macOS için kurulum yok.',
+	faqPrice: 'Kayıt olmalı mıyım? Ücretli mi?',
+	faqPriceA:
+		'Hesap açmana gerek yok, ücret de yok. Kendi Backblaze B2, Wasabi veya Amazon S3 anahtarınla bağlanırsın.',
+	faqKey: 'Anahtarım nerede durur?',
+	faqKeyA:
+		'Anahtarın bu sitede durmaz. Kurduğun uygulamada, senin bilgisayarında kalır. Listeleme ve dosya okuma izni olan bir anahtar yeter. Linux’ta kaydın tutulması için GNOME Keyring veya KWallet açık olmalı.',
+	faqDemo: 'Demoda kendi kovama bakabilir miyim?',
+	faqDemoA:
+		'Demo örnek dosyalardan oluşan bir listedir. Anahtar eklenemez. Kendi kovandaki dosyalar için uygulamayı kurup anahtarı orada kaydedersin.',
+	footerBy: '{name} tarafından geliştirildi',
+	footerRights: '© 2026 tüm hakları saklıdır',
+	footerLegal: 'Yasal belgeler',
+	footerContent: 'İçerik politikası',
+	footerKvkk: 'KVKK',
+	footerPrivacy: 'Gizlilik',
+	footerTerms: 'Kullanım koşulları',
 } as const;
 
 const en: { [K in keyof typeof tr]: string } = {
 	appTitle: 'BucketLens | Backblaze, Wasabi, S3 Filesystem',
 	tagline: 'Backblaze, Wasabi, and Amazon S3',
-	localOnly: 'Keys stay in a file inside the project folder',
+	localOnly: 'The key stays on this computer',
 	settings: 'Settings',
 	addKey: 'Add key',
 	welcomeTitle: 'Open a bucket',
 	welcomeBody:
-		'Save an application key from the UI. Browse folders, open a file, and download it. The key is not stored in the browser; it stays in a local file.',
+		'Save your key, open a folder, and download a file. The key is not kept in the browser.',
 	permissionHint: 'The key needs permission to list and read objects.',
 	bucket: 'Bucket name',
 	provider: 'Provider',
@@ -175,20 +222,20 @@ const en: { [K in keyof typeof tr]: string } = {
 	kindArchive: 'Archive',
 	kindOther: 'File',
 	errorTitle: 'Could not connect',
-	errorOffline:
-		'The local server could not be reached. pnpm start opens both the UI and the key file.',
+	errorOffline: 'The local server could not be reached.',
 	errorForbidden: 'Access was denied. This key may not be allowed to read the bucket.',
 	errorNotFound: 'Bucket not found. Check the name and region.',
 	errorMissing: 'File not found.',
 	errorSignature: 'The signature was rejected. Check the secret and your computer clock.',
 	errorGeneric: 'The request did not complete.',
+	errorKeystore:
+		'The key could not be saved. On Linux, GNOME Keyring or KWallet needs to be unlocked.',
 	deepProgress: 'Searching subfolders',
 	scanning: 'Scanning every object',
 	moreRemain: 'More objects are available',
 	themeToDark: 'Dark theme',
 	themeToLight: 'Light theme',
-	settingsLead:
-		'Credentials are written to data/connection.json. They are not saved in the browser.',
+	settingsLead: 'The key is stored on this computer and is not sent back to the browser.',
 	connectionTitle: 'Connection',
 	keysTitle: 'Keys',
 	newKey: 'New key',
@@ -198,8 +245,60 @@ const en: { [K in keyof typeof tr]: string } = {
 	deleteKey: 'Delete',
 	inUse: 'In use',
 	backToKeys: 'Keys',
+	landingTitle: 'Browse the files in your bucket',
+	landingLead:
+		'Backblaze B2, Wasabi, and Amazon S3. Open folders, find a file, and download it. Your key is not stored on this site. It stays in the app on your computer.',
+	landingWindows: 'Windows',
+	landingWindowsHint: 'Installer',
+	landingDeb: 'Debian and Ubuntu',
+	landingDebHint: 'deb package',
+	landingAppImage: 'Other Linux',
+	landingAppImageHint: 'One file, nothing to install',
+	landingForYou: 'For this computer',
+	landingReleases: 'All releases',
+	landingOpen: 'View the demo',
+	landingShot: 'The file list inside a bucket',
+	demoMark: 'Demo',
+	demoNote: 'This is a sample list. You cannot add a key.',
+	landingNoMac: 'There is no macOS download.',
+	landingPointBrowse: 'Move through folders, search by name, and filter by type.',
+	landingPointDetail: 'Click a file to open its details. The download starts there.',
+	landingPointLocal: 'Turkish and English, and a dark theme when you want it.',
+	faqTitle: 'Frequently asked questions',
+	faqUse: 'How do I use it?',
+	faqUseA:
+		'Download and install the app. Save your key and enter the bucket name. Folders open, and you can find a file and download it. Before you install, click the file list image to see a sample.',
+	faqActions: 'What can I do?',
+	faqActionsA:
+		'For now you can list files and download them. Updating, creating, and deleting will be added soon.',
+	faqSystems: 'Which systems are supported?',
+	faqSystemsA:
+		'Windows comes with an installer. Debian and Ubuntu use a deb package. Other Linux distributions can run the single file. There is no macOS download.',
+	faqPrice: 'Do I need an account? Is it paid?',
+	faqPriceA:
+		'There is no account to create and no fee. You connect with your own Backblaze B2, Wasabi, or Amazon S3 key.',
+	faqKey: 'Where does my key stay?',
+	faqKeyA:
+		'Your key is not stored on this site. It stays in the app on your computer. A key with permission to list and read files is enough. On Linux, GNOME Keyring or KWallet needs to be unlocked so the key can be saved.',
+	faqDemo: 'Can I open my own bucket in the demo?',
+	faqDemoA:
+		'The demo is a sample list of files. A key cannot be added there. To see your own bucket, install the app and save the key in it.',
+	footerBy: 'Developed by {name}',
+	footerRights: '© 2026 all rights reserved',
+	footerLegal: 'Legal',
+	footerContent: 'Content policy',
+	footerKvkk: 'KVKK',
+	footerPrivacy: 'Privacy',
+	footerTerms: 'Terms of use',
 };
 
 export type Lang = 'tr' | 'en';
 export type Dictionary = { [K in keyof typeof tr]: string };
 export const translations: Record<Lang, Dictionary> = { tr, en };
+
+export function around(template: string, token = 'name'): { before: string; after: string } {
+	const needle = `{${token}}`;
+	const at = template.indexOf(needle);
+	if (at < 0) return { before: template, after: '' };
+	return { before: template.slice(0, at), after: template.slice(at + needle.length) };
+}

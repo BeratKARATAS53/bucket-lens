@@ -80,10 +80,18 @@
 				>
 					<app-icon [name]="theme.mode() === 'dark' ? 'sun' : 'moon'" class="size-5" />
 				</button>
-				<button type="button" class="btn btn-quiet" (click)="openSettings()">
-					<app-icon name="settings" class="size-4" />
-					<span class="hidden sm:inline">{{ t.settings }}</span>
-				</button>
+				@if (demo) {
+					<span
+						class="inline-flex items-center rounded-full bg-accent-soft px-3 py-1.5 text-sm font-semibold text-accent"
+					>
+						{{ t.demoMark }}
+					</span>
+				} @else {
+					<button type="button" class="btn btn-quiet" (click)="openSettings()">
+						<app-icon name="settings" class="size-4" />
+						<span class="hidden sm:inline">{{ t.settings }}</span>
+					</button>
+				}
 			</div>
 		</div>
 	</header>
@@ -304,9 +312,11 @@
 							<button type="button" class="btn btn-primary" (click)="refresh()">
 								{{ t.retry }}
 							</button>
-							<button type="button" class="btn btn-quiet" (click)="openSettings()">
-								{{ t.settings }}
-							</button>
+							@if (!demo) {
+								<button type="button" class="btn btn-quiet" (click)="openSettings()">
+									{{ t.settings }}
+								</button>
+							}
 						</div>
 					</section>
 				} @else if (!visible().length) {
@@ -450,7 +460,9 @@
 					</div>
 				}
 			</div>
-			<p class="mt-8 text-center text-xs text-muted">{{ t.localOnly }}</p>
+			<p class="mt-8 text-center text-xs text-muted">
+				{{ demo ? t.demoNote : t.localOnly }}
+			</p>
 		}
 	</main>
 </div>
@@ -487,7 +499,7 @@
 	</div>
 </ng-template>
 
-@if (settingsOpen()) {
+@if (settingsOpen() && !demo) {
 	<app-settings-dialog (closed)="settingsOpen.set(false)" />
 }
 @if (selected(); as file) {

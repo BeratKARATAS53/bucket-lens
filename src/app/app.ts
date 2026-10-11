@@ -11,6 +11,7 @@ import {
 	untracked,
 	viewChild,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { isCancel } from 'axios';
 import { classifyS3Error } from './helpers/errors';
 import {
@@ -32,14 +33,16 @@ import { BucketService } from './services/bucket.service';
 import { ConnectionService } from './services/connection.service';
 import { I18nService } from './services/i18n.service';
 import { ThemeService } from './services/theme.service';
+import { DEMO_MODE } from './demo/demo';
 
 @Component({
-	selector: 'app-root',
+	selector: 'app-browser',
 	imports: [NgTemplateOutlet, Icon, SettingsDialog, DetailDialog],
 	templateUrl: './app.html',
 	styleUrl: './app.css',
 })
 export class App {
+	protected readonly demo = inject(DEMO_MODE, { optional: true }) === true;
 	protected readonly i18n = inject(I18nService);
 	protected readonly providerLabelKey = providerLabelKey;
 	protected readonly theme = inject(ThemeService);
@@ -130,6 +133,10 @@ export class App {
 	private activeConnectionId: string | null | undefined = undefined;
 
 	constructor() {
+		if (!this.demo && !isDesktopShell()) {
+			void inject(Router).navigateByUrl('/demo', { replaceUrl: true });
+			return;
+		}
 		void this.store.load();
 		effect(() => {
 			document.body.style.overflow = this.settingsOpen() || this.selected() ? 'hidden' : '';
@@ -186,6 +193,7 @@ export class App {
 	}
 
 	protected openSettings(): void {
+		if (this.demo) return;
 		this.selected.set(null);
 		this.settingsOpen.set(true);
 	}
@@ -353,4 +361,10 @@ export class App {
 			}
 		}
 	}
+}
+
+function isDesktopShell(): boolean {
+	const host = location.hostname;
+	const local = host === '127.0.0.1' || host === 'localhost';
+	return local && new URLSearchParams(location.search).has('desktop');
 }

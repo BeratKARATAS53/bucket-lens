@@ -1,0 +1,107 @@
+import assert from 'node:assert/strict';
+import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { test } from 'node:test';
+import { KeystoreError } from './keystore.mjs';
+import { startServer } from './index.mjs';
+
+test('the desktop server serves the interface and hides missing secrets', async () => {
+	const dir = await mkdtemp(join(tmpdir(), 'bucket-lens-web-'));
+	const web = join(dir, 'web');
+	const dataDir = join(dir, 'data');
+	await mkdir(web);
+	await writeFile(join(web, 'index.html'), '<!doctype html><title>Bucket Lens</title>');
+	await writeFile(join(web, 'app.js'), 'console.log("bucket-lens")');
+	const server = await startServer({
+		port: 0,
+		staticRoot: web,
+		dataDir,
+		keystore: memoryKeystore(),
+	});
+	try {
+		const port = server.address().port;
+		const page = await fetch(`http://127.0.0.1:${port}/`);
+		assert.equal(page.status, 200);
+		assert.match(await page.text(), /Bucket Lens/);
+		const script = await fetch(`http://127.0.0.1:${port}/app.js`);
+		assert.equal(script.headers.get('content-type'), 'text/javascript; charset=utf-8');
+		const home = await fetch(`http://127.0.0.1:${port}/folders/2024`);
+		assert.equal(home.status, 200);
+		assert.match(await home.text(), /Bucket Lens/);
+		const api = await fetch(`http://127.0.0.1:${port}/api/connection`);
+		assert.deepEqual(await api.json(), { activeId: null, connections: [] });
+		const missing = await fetch(`http://127.0.0.1:${port}/api/missing`);
+		assert.equal(missing.status, 404);
+		const escape = await fetch(`http://127.0.0.1:${port}/%2e%2e/%2e%2e/package.json`);
+		assert.equal(escape.status, 404);
+	} finally {
+		await close(server);
+		await rm(dir, { recursive: true, force: true });
+	}
+});
+
+test('a missing keystore is reported when the secret is no longer on disk', async () => {
+	const dir = await mkdtemp(join(tmpdir(), 'bucket-lens-web-'));
+	const server = await startServer({
+		port: 0,
+		dataDir: dir,
+		keystore: {
+			async readSecret() {
+				throw new KeystoreError('The operating system keystore is unavailable.');
+			},
+			async writeSecret() {
+				throw new KeystoreError('The operating system keystore is unavailable.');
+			},
+			async deleteSecret() {
+				throw new KeystoreError('The operating system keystore is unavailable.');
+			},
+		},
+	});
+	try {
+		await writeFile(
+			join(dir, 'connection.json'),
+			`${JSON.stringify({
+				activeId: 'abc',
+				connections: [
+					{
+						id: 'abc',
+						provider: 's3',
+						region: 'us-east-1',
+						endpoint: 's3.us-east-1.amazonaws.com',
+						bucket: 'photos',
+						accessKeyId: 'AKIAEXAMPLE',
+					},
+				],
+			})}\n`,
+		);
+		const port = server.address().port;
+		const response = await fetch(`http://127.0.0.1:${port}/api/connection`);
+		assert.equal(response.status, 503);
+		assert.equal((await response.json()).code, 'KeystoreUnavailable');
+	} finally {
+		await close(server);
+		await rm(dir, { recursive: true, force: true });
+	}
+});
+
+function memoryKeystore() {
+	const secrets = new Map();
+	return {
+		async readSecret(id) {
+			return secrets.has(id) ? secrets.get(id) : null;
+		},
+		async writeSecret(id, secret) {
+			secrets.set(id, secret);
+		},
+		async deleteSecret(id) {
+			secrets.delete(id);
+		},
+	};
+}
+
+function close(server) {
+	return new Promise((resolve, reject) => {
+		server.close((error) => (error ? reject(error) : resolve()));
+	});
+}

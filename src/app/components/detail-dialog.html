@@ -87,15 +87,17 @@
 		}
 
 		<div class="mt-5 flex flex-wrap gap-2">
-			<button
-				type="button"
-				class="btn btn-primary"
-				(click)="download()"
-				[disabled]="downloading()"
-			>
-				<app-icon name="download" class="size-4" />
-				{{ downloading() ? t.preparing : t.download }}
-			</button>
+			@if (!demo) {
+				<button
+					type="button"
+					class="btn btn-primary"
+					(click)="download()"
+					[disabled]="downloading()"
+				>
+					<app-icon name="download" class="size-4" />
+					{{ downloading() ? t.preparing : t.download }}
+				</button>
+			}
 			<button type="button" class="btn btn-quiet" (click)="copyPath()">
 				<app-icon [name]="copied() ? 'check' : 'copy'" class="size-4" />
 				{{ copied() ? t.copied : copyFailed() ? t.copyFailed : t.copyPath }}

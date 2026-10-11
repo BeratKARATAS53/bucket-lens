@@ -79,6 +79,7 @@ export function messageForError(kind: S3ErrorKind, t: Dictionary): string {
 		notFound: t.errorNotFound,
 		missing: t.errorMissing,
 		signature: t.errorSignature,
+		keystore: t.errorKeystore,
 		generic: t.errorGeneric,
 	};
 	return messages[kind];

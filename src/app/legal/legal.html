@@ -1,0 +1,25 @@
+@let page = doc();
+
+<div class="relative flex min-h-dvh flex-col">
+	<div class="pointer-events-none fixed inset-0 -z-10">
+		<div class="absolute -top-24 right-[-4rem] size-80 rounded-full bg-accent/15 blur-3xl"></div>
+		<div class="absolute bottom-0 left-[-3rem] size-64 rounded-full bg-accent/10 blur-3xl"></div>
+	</div>
+
+	<app-site-header logoHref="/" />
+
+	<main class="mx-auto w-full max-w-3xl flex-1 px-4 py-14 sm:px-6">
+		<p class="text-sm text-muted">{{ page.updated }}</p>
+		<h1 class="mt-3 text-4xl font-semibold text-balance">{{ page.title }}</h1>
+		<div class="mt-10 space-y-8">
+			@for (block of page.blocks; track block.heading) {
+				<section>
+					<h2 class="text-lg font-semibold">{{ block.heading }}</h2>
+					<p class="mt-2 text-pretty leading-relaxed text-muted">{{ block.body }}</p>
+				</section>
+			}
+		</div>
+	</main>
+
+	<app-site-footer />
+</div>

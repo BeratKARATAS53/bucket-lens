@@ -54,7 +54,14 @@ export type KindFilter =
 export type SortKey = 'name' | 'size' | 'modified';
 export type SortDir = 'asc' | 'desc';
 export type FileKind = 'image' | 'video' | 'audio' | 'document' | 'archive' | 'other';
-export type S3ErrorKind = 'offline' | 'forbidden' | 'notFound' | 'missing' | 'signature' | 'generic';
+export type S3ErrorKind =
+	| 'offline'
+	| 'forbidden'
+	| 'notFound'
+	| 'missing'
+	| 'signature'
+	| 'keystore'
+	| 'generic';
 
 export interface S3Failure {
 	kind: S3ErrorKind;

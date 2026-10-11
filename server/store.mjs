@@ -1,47 +1,94 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createKeystore, KeystoreError } from './keystore.mjs';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const filePath = join(root, 'data', 'connection.json');
-const fields = ['region', 'endpoint', 'bucket', 'accessKeyId', 'secretAccessKey'];
+const publicFields = ['region', 'endpoint', 'bucket', 'accessKeyId'];
+const legacyFields = [...publicFields, 'secretAccessKey'];
 
-export function connectionPath() {
-	return filePath;
+export function defaultConnectionPath() {
+	return join(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'connection.json');
 }
 
-export async function readStore() {
+export function createConnectionStore({ filePath = defaultConnectionPath(), keystore = createKeystore() } = {}) {
+	return {
+		connectionPath: () => filePath,
+		readStore: () => readStore(filePath, keystore),
+		writeStore: (store) => writeStore(filePath, keystore, store),
+		forgetSecret: (id) => keystore.deleteSecret(id),
+	};
+}
+
+export async function readStore(filePath, keystore) {
+	let parsed;
 	try {
-		const parsed = JSON.parse(await readFile(filePath, 'utf8'));
-		if (isConnection(parsed)) {
-			const store = {
-				activeId: randomUUID(),
-				connections: [{ id: '', ...normalizeConnection(parsed) }],
-			};
-			store.connections[0].id = store.activeId;
-			await writeStore(store);
-			return store;
-		}
-		if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.connections)) {
-			return { activeId: null, connections: [] };
-		}
-		const connections = parsed.connections.filter(isStoredConnection).map(normalizeStored);
-		const activeId = connections.some((item) => item.id === parsed.activeId)
-			? parsed.activeId
-			: (connections[0]?.id ?? null);
-		return { activeId, connections };
+		parsed = JSON.parse(await readFile(filePath, 'utf8'));
 	} catch (error) {
 		if (error && error.code === 'ENOENT') return { activeId: null, connections: [] };
 		throw error;
 	}
+
+	if (isLegacyConnection(parsed)) {
+		const store = {
+			activeId: randomUUID(),
+			connections: [{ id: '', ...normalizeConnection(parsed) }],
+		};
+		store.connections[0].id = store.activeId;
+		return finishRead(filePath, keystore, store, true);
+	}
+
+	if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.connections)) {
+		return { activeId: null, connections: [] };
+	}
+
+	const connections = parsed.connections.filter(isStoredConnection).map(normalizeStored);
+	const activeId = connections.some((item) => item.id === parsed.activeId)
+		? parsed.activeId
+		: (connections[0]?.id ?? null);
+	return finishRead(filePath, keystore, { activeId, connections }, false);
 }
 
-export async function writeStore(store) {
+async function finishRead(filePath, keystore, store, legacy) {
+	let plaintext = false;
+	let migrationBlocked = false;
+	for (const connection of store.connections) {
+		const existing = connection.secretAccessKey;
+		if (existing) {
+			plaintext = true;
+			try {
+				await keystore.writeSecret(connection.id, existing);
+			} catch (error) {
+				if (!(error instanceof KeystoreError)) throw error;
+				migrationBlocked = true;
+			}
+			continue;
+		}
+		connection.secretAccessKey = (await keystore.readSecret(connection.id)) ?? '';
+	}
+	if ((legacy || plaintext) && !migrationBlocked) await writeStore(filePath, keystore, store);
+	return store;
+}
+
+export async function writeStore(filePath, keystore, store) {
+	for (const connection of store.connections) {
+		if (!connection.secretAccessKey) continue;
+		await keystore.writeSecret(connection.id, connection.secretAccessKey);
+	}
+	const persisted = {
+		activeId: store.activeId,
+		connections: store.connections.map(persistedConnection),
+	};
 	await mkdir(dirname(filePath), { recursive: true });
 	const temporary = `${filePath}.tmp`;
-	await writeFile(temporary, `${JSON.stringify(store, null, 2)}\n`, { mode: 0o600 });
-	await rename(temporary, filePath);
+	await writeFile(temporary, `${JSON.stringify(persisted, null, 2)}\n`, { mode: 0o600 });
+	try {
+		await rename(temporary, filePath);
+	} catch (error) {
+		if (process.platform !== 'win32') throw error;
+		await rm(filePath, { force: true });
+		await rename(temporary, filePath);
+	}
 }
 
 export function publicStore(store) {
@@ -63,6 +110,17 @@ export function publicConnection(connection) {
 	};
 }
 
+function persistedConnection(connection) {
+	return {
+		id: connection.id,
+		provider: connection.provider,
+		region: connection.region,
+		endpoint: connection.endpoint,
+		bucket: connection.bucket,
+		accessKeyId: connection.accessKeyId,
+	};
+}
+
 function normalizeConnection(value) {
 	const provider = typeof value.provider === 'string' ? value.provider.trim() : '';
 	return {
@@ -71,22 +129,22 @@ function normalizeConnection(value) {
 		endpoint: value.endpoint.trim(),
 		bucket: value.bucket.trim(),
 		accessKeyId: value.accessKeyId.trim(),
-		secretAccessKey: value.secretAccessKey.trim(),
+		secretAccessKey: typeof value.secretAccessKey === 'string' ? value.secretAccessKey.trim() : '',
 	};
 }
 
 function normalizeStored(value) {
-	return { id: value.id, ...normalizeConnection(value) };
+	return { id: value.id.trim(), ...normalizeConnection(value) };
 }
 
-function isConnection(value) {
+function isLegacyConnection(value) {
 	if (!value || typeof value !== 'object' || typeof value.id === 'string') return false;
-	return fields.every((key) => typeof value[key] === 'string' && value[key].trim());
+	return legacyFields.every((key) => typeof value[key] === 'string' && value[key].trim());
 }
 
 function isStoredConnection(value) {
 	if (!value || typeof value !== 'object' || typeof value.id !== 'string' || !value.id.trim()) {
 		return false;
 	}
-	return fields.every((key) => typeof value[key] === 'string' && value[key].trim());
+	return publicFields.every((key) => typeof value[key] === 'string' && value[key].trim());
 }

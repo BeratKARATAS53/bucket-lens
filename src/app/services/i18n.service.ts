@@ -13,7 +13,7 @@ export class I18nService {
 		effect(() => {
 			const lang = this.lang();
 			document.documentElement.lang = lang;
-			document.title = 'BucketLens | Backblaze, Wasabi, S3 Filesystem';
+			document.title = translations[lang].appTitle;
 			writeStorage(LANG_KEY, lang);
 		});
 	}

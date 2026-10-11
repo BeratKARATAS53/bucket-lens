@@ -1,0 +1,110 @@
+@let t = i18n.t();
+@let lang = i18n.lang();
+
+<div class="relative flex min-h-dvh flex-col">
+	<div class="pointer-events-none fixed inset-0 -z-10">
+		<div class="absolute -top-24 right-[-4rem] size-80 rounded-full bg-accent/15 blur-3xl"></div>
+		<div class="absolute bottom-0 left-[-3rem] size-64 rounded-full bg-accent/10 blur-3xl"></div>
+	</div>
+
+	<app-site-header />
+
+	<main class="mx-auto w-full max-w-6xl flex-1 px-4 pt-16 pb-16 sm:px-6 sm:pt-20">
+		<div class="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_28rem] lg:gap-14">
+			<div>
+				<h1 class="max-w-xl text-4xl leading-none font-semibold text-balance sm:text-5xl">
+					{{ t.landingTitle }}
+				</h1>
+				<p class="mt-4 max-w-xl text-pretty text-muted">{{ t.landingLead }}</p>
+
+				<div id="download" class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+					@for (item of downloads; track item.id) {
+						<a
+							class="btn"
+							[class.btn-primary]="primary(item.id)"
+							[class.btn-quiet]="!primary(item.id)"
+							[href]="item.href"
+						>
+							<app-icon name="download" class="size-4" />
+							<span>{{ label(item.id) }}</span>
+							<span class="font-normal opacity-80">{{ hint(item.id) }}</span>
+							@if (primary(item.id)) {
+								<span class="sr-only">{{ t.landingForYou }}</span>
+							}
+						</a>
+					}
+				</div>
+				@if (platform === 'mac') {
+					<p class="mt-3 text-sm text-muted">{{ t.landingNoMac }}</p>
+				}
+				<p class="mt-4 text-sm">
+					<a class="focus-ring rounded-full text-accent" [href]="releases">{{ t.landingReleases }}</a>
+					<span class="text-muted"> · </span>
+					<a routerLink="/demo" class="focus-ring rounded-full">{{ t.landingOpen }}</a>
+				</p>
+			</div>
+
+			<a
+				routerLink="/demo"
+				class="group mx-auto block w-full max-w-md cursor-pointer lg:max-w-none"
+				[attr.aria-label]="t.landingOpen"
+			>
+				<img
+					class="w-full origin-center rounded-2xl shadow-xl ring-1 ring-line transition duration-200 ease-out group-hover:scale-105 group-hover:shadow-[0_28px_70px_rgb(40_28_16/0.28)] dark:group-hover:shadow-[0_28px_70px_rgb(0_0_0/0.55)]"
+					[src]="lang === 'tr' ? 'preview-tr.png' : 'preview-en.png'"
+					width="1212"
+					height="906"
+					alt=""
+				/>
+			</a>
+		</div>
+
+		<ul class="mx-auto mt-20 grid max-w-4xl gap-10 text-center text-sm text-muted sm:grid-cols-3">
+			<li class="flex flex-col items-center gap-3 px-3">
+				<span class="grid size-12 place-items-center rounded-2xl bg-raised text-accent ring-1 ring-line">
+					<app-icon name="folder" class="size-5" />
+				</span>
+				<p class="text-pretty">{{ t.landingPointBrowse }}</p>
+			</li>
+			<li class="flex flex-col items-center gap-3 px-3">
+				<span class="grid size-12 place-items-center rounded-2xl bg-raised text-accent ring-1 ring-line">
+					<app-icon name="file" class="size-5" />
+				</span>
+				<p class="text-pretty">{{ t.landingPointDetail }}</p>
+			</li>
+			<li class="flex flex-col items-center gap-3 px-3">
+				<span class="grid size-12 place-items-center rounded-2xl bg-raised text-accent ring-1 ring-line">
+					<app-icon name="globe" class="size-5" />
+				</span>
+				<p class="text-pretty">{{ t.landingPointLocal }}</p>
+			</li>
+		</ul>
+
+		<section class="mx-auto mt-16 max-w-3xl" aria-labelledby="faq-title">
+			<h2 id="faq-title" class="text-center text-2xl font-semibold text-balance">{{ t.faqTitle }}</h2>
+			<div class="mt-8 divide-y divide-line border-y border-line text-left">
+				@for (item of faqs; track item.q) {
+					<div>
+						<button
+							type="button"
+							class="focus-ring flex w-full cursor-pointer items-center justify-between gap-4 py-4 text-left font-medium"
+							[attr.aria-expanded]="openFaq() === item.q"
+							(click)="toggleFaq(item.q)"
+						>
+							<span>{{ t[item.q] }}</span>
+							<app-icon
+								[name]="openFaq() === item.q ? 'chevronUp' : 'chevronDown'"
+								class="size-5 shrink-0 text-muted"
+							/>
+						</button>
+						@if (openFaq() === item.q) {
+							<p class="pb-4 text-pretty text-sm text-muted">{{ t[item.a] }}</p>
+						}
+					</div>
+				}
+			</div>
+		</section>
+	</main>
+
+	<app-site-footer />
+</div>
