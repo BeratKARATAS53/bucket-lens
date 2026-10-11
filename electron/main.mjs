@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog } from 'electron';
+import { app, BrowserWindow, dialog, shell } from 'electron';
 import { join } from 'node:path';
 import { startServer } from '../server/index.mjs';
 
@@ -38,6 +38,12 @@ if (!app.requestSingleInstanceLock()) {
 					nodeIntegration: false,
 					sandbox: true,
 				},
+			});
+			mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+				if (url.startsWith('https://github.com/BeratKARATAS53/BucketLens/releases')) {
+					void shell.openExternal(url);
+				}
+				return { action: 'deny' };
 			});
 			await mainWindow.loadURL(`http://127.0.0.1:${address.port}/app?desktop`);
 		} catch (error) {
