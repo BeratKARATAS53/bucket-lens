@@ -20,13 +20,7 @@
 				class="focus-ring flex items-center gap-3 rounded-2xl pr-2"
 				(click)="goHome()"
 			>
-				<img
-					src="logo.png"
-					alt=""
-					class="h-10 w-auto"
-					width="323"
-					height="307"
-				/>
+				<img src="logo.png" alt="" class="h-10 w-auto" width="323" height="307" />
 				<span class="text-left">
 					<span class="block font-display text-[1.7rem] leading-tight">BucketLens</span>
 					<span class="mt-1 hidden text-xs text-muted sm:block">{{ t.tagline }}</span>
@@ -38,10 +32,13 @@
 					class="inline-flex max-w-full items-center gap-2 rounded-full bg-raised px-3 py-1.5 text-sm ring-1 ring-line"
 				>
 					<app-icon name="bucket" class="size-4 text-accent" />
-					<span class="max-w-40 truncate font-medium">{{ cfg.bucket }}</span>
-					<span class="truncate text-muted"
-						>{{ t[providerLabelKey(cfg.provider)] }} · {{ cfg.region }}</span
-					>
+					<span class="max-w-40 truncate font-medium">{{ connectionTitle(cfg) }}</span>
+					<span class="truncate text-muted">
+						{{ t[providerLabelKey(cfg.provider)] }}
+						@if (connectionMeta(cfg) !== connectionTitle(cfg)) {
+							· {{ connectionMeta(cfg) }}
+						}
+					</span>
 				</span>
 			}
 
@@ -139,13 +136,7 @@
 			<section
 				class="mx-auto flex min-h-[68dvh] max-w-xl flex-col items-center justify-center text-center"
 			>
-				<img
-					src="logo.png"
-					alt=""
-					class="h-24 w-auto"
-					width="323"
-					height="307"
-				/>
+				<img src="logo.png" alt="" class="h-24 w-auto" width="323" height="307" />
 				<h1 class="mt-6 text-5xl leading-none font-semibold">{{ t.welcomeTitle }}</h1>
 				<p class="mt-4 text-pretty text-muted">{{ t.welcomeBody }}</p>
 				<button type="button" class="btn btn-primary mt-6" (click)="openSettings()">
@@ -158,7 +149,7 @@
 				<div class="flex flex-wrap items-center gap-2">
 					<nav
 						class="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto text-sm"
-						[attr.aria-label]="cfg.bucket"
+						[attr.aria-label]="connectionTitle(cfg)"
 					>
 						<button
 							type="button"
@@ -166,7 +157,7 @@
 							[class.text-muted]="prefix()"
 							(click)="goTo('')"
 						>
-							{{ cfg.bucket }}
+							{{ connectionTitle(cfg) }}
 						</button>
 						@for (crumb of crumbs(); track crumb.prefix) {
 							<span class="text-muted">/</span>
@@ -339,7 +330,11 @@
 								{{ t.retry }}
 							</button>
 							@if (!demo) {
-								<button type="button" class="btn btn-quiet" (click)="openSettings()">
+								<button
+									type="button"
+									class="btn btn-quiet"
+									(click)="openSettings()"
+								>
 									{{ t.settings }}
 								</button>
 							}

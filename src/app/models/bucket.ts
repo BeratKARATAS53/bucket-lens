@@ -1,11 +1,12 @@
 export interface ConnectionView {
 	id: string;
-	provider: 'backblaze' | 'wasabi' | 's3';
+	provider: 'backblaze' | 'wasabi' | 's3' | 'ftp';
 	region: string;
 	endpoint: string;
 	bucket: string;
 	accessKeyId: string;
 	hasSecret: boolean;
+	secure?: boolean;
 }
 
 export interface ConnectionList {
@@ -15,12 +16,13 @@ export interface ConnectionList {
 
 export interface ConnectionDraft {
 	id?: string;
-	provider: 'backblaze' | 'wasabi' | 's3';
+	provider: 'backblaze' | 'wasabi' | 's3' | 'ftp';
 	region: string;
 	endpoint: string;
 	bucket: string;
 	accessKeyId: string;
 	secretAccessKey: string;
+	secure?: boolean;
 }
 
 export interface BucketEntry {
@@ -61,6 +63,7 @@ export type S3ErrorKind =
 	| 'missing'
 	| 'signature'
 	| 'keystore'
+	| 'unreachable'
 	| 'generic';
 
 export interface S3Failure {

@@ -19,14 +19,16 @@ export class ConnectionService {
 	}
 
 	async save(draft: ConnectionDraft): Promise<void> {
+		const ftp = draft.provider === 'ftp';
 		const { data } = await api.put<ConnectionList>('/connection', {
 			id: draft.id,
 			provider: draft.provider,
 			region: draft.region.trim(),
 			endpoint: normalizeEndpoint(draft.endpoint),
-			bucket: draft.bucket.trim(),
+			bucket: ftp ? draft.bucket.trim() || '/' : draft.bucket.trim(),
 			accessKeyId: draft.accessKeyId.trim(),
 			secretAccessKey: draft.secretAccessKey.trim(),
+			...(ftp ? { secure: draft.secure === true } : {}),
 		});
 		this.apply(data);
 	}

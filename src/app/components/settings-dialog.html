@@ -48,9 +48,14 @@
 					>
 						<div class="flex items-start justify-between gap-3">
 							<div class="min-w-0">
-								<p class="truncate text-lg font-semibold">{{ item.bucket }}</p>
+								<p class="truncate text-lg font-semibold">
+									{{ connectionTitle(item) }}
+								</p>
 								<p class="mt-1 text-sm text-muted">
-									{{ t[providerLabelKey(item.provider)] }} · {{ item.region }}
+									{{ t[providerLabelKey(item.provider)] }}
+									@if (connectionMeta(item) !== connectionTitle(item)) {
+										· {{ connectionMeta(item) }}
+									}
 								</p>
 								<p class="mt-1 truncate font-mono text-xs text-muted">
 									{{ item.accessKeyId }}
@@ -132,72 +137,154 @@
 					</select>
 				</label>
 
-				<label class="block">
-					<span class="label">{{ t.bucket }}</span>
-					<input
-						class="field"
-						[class.field-bad]="fieldError('bucket', t)"
-						name="bucket"
-						[value]="draftValue.bucket"
-						(input)="onBucket($event)"
-						autocomplete="off"
-						spellcheck="false"
-						placeholder="my-bucket"
-					/>
-					@if (fieldError('bucket', t); as message) {
-						<span class="field-error">{{ message }}</span>
-					}
-				</label>
-
-				<label class="block">
-					<span class="label">{{ t.region }}</span>
-					<select #regionSelect class="field" name="region" (change)="onRegion($event)">
-						@for (region of regions(); track region.id) {
-							<option
-								[value]="region.id"
-								[selected]="region.id === draftValue.region"
-							>
-								{{ region.label }} · {{ region.id }}
-							</option>
-						}
-					</select>
-					@if (suggested && suggested === draftValue.region) {
-						<span class="mt-1 block text-xs text-ok">{{ t.regionGuess }}</span>
-					}
-					@if (suggested && suggested !== draftValue.region) {
-						<button
-							type="button"
-							class="mt-2 text-sm font-semibold text-accent"
-							(click)="applySuggestion()"
-						>
-							{{ t.useRegion }}: {{ suggested }}
-						</button>
-					}
-				</label>
-
-				<label class="block">
-					<span class="label">{{ t.endpoint }}</span>
-					<span class="flex items-center gap-2">
-						<span class="text-sm text-muted">https://</span>
+				@if (draftValue.provider === 'ftp') {
+					<label class="block">
+						<span class="label">{{ t.ftpHost }}</span>
 						<input
-							class="field min-w-0"
+							class="field"
 							[class.field-bad]="fieldError('endpoint', t)"
 							name="endpoint"
 							[value]="draftValue.endpoint"
 							(input)="onEndpoint($event)"
 							autocomplete="off"
 							spellcheck="false"
-							[attr.placeholder]="draftValue.endpoint"
+							autocapitalize="off"
+							placeholder="ftp.example.com"
 						/>
-					</span>
-					<span class="mt-1 block text-xs text-muted">{{ t.endpointHint }}</span>
-					@if (fieldError('endpoint', t); as message) {
-						<span class="field-error">{{ message }}</span>
-					}
-				</label>
+						<span class="mt-1 block text-xs text-muted">{{ t.ftpHostHint }}</span>
+						@if (fieldError('endpoint', t); as message) {
+							<span class="field-error">{{ message }}</span>
+						}
+					</label>
+
+					<label class="block">
+						<span class="label">{{ t.ftpPort }}</span>
+						<input
+							class="field"
+							[class.field-bad]="fieldError('port', t)"
+							name="port"
+							type="number"
+							min="1"
+							max="65535"
+							[value]="draftValue.region"
+							(input)="onPort($event)"
+							autocomplete="off"
+						/>
+						@if (fieldError('port', t); as message) {
+							<span class="field-error">{{ message }}</span>
+						}
+					</label>
+
+					<label class="block">
+						<span class="label">{{ t.ftpPath }}</span>
+						<input
+							class="field"
+							name="bucket"
+							[value]="draftValue.bucket"
+							(input)="onBucket($event)"
+							autocomplete="off"
+							spellcheck="false"
+							placeholder="/"
+						/>
+						<span class="mt-1 block text-xs text-muted">{{ t.ftpPathHint }}</span>
+					</label>
+
+					<button
+						type="button"
+						role="switch"
+						class="focus-ring flex items-center gap-3 rounded-2xl text-left"
+						[attr.aria-checked]="draftValue.secure === true"
+						(click)="toggleSecure()"
+					>
+						<span
+							class="switch-track relative h-6 w-10 shrink-0 rounded-full transition"
+							[class.is-on]="draftValue.secure === true"
+						>
+							<span
+								class="switch-knob absolute top-0.5 left-0.5 size-5 rounded-full shadow transition"
+								[class.is-on]="draftValue.secure === true"
+							></span>
+						</span>
+						<span>
+							<span class="block text-sm font-semibold">{{ t.ftpSecure }}</span>
+							<span class="block text-xs text-muted">{{ t.ftpSecureHint }}</span>
+						</span>
+					</button>
+				} @else {
+					<label class="block">
+						<span class="label">{{ t.bucket }}</span>
+						<input
+							class="field"
+							[class.field-bad]="fieldError('bucket', t)"
+							name="bucket"
+							[value]="draftValue.bucket"
+							(input)="onBucket($event)"
+							autocomplete="off"
+							spellcheck="false"
+							placeholder="my-bucket"
+						/>
+						@if (fieldError('bucket', t); as message) {
+							<span class="field-error">{{ message }}</span>
+						}
+					</label>
+
+					<label class="block">
+						<span class="label">{{ t.region }}</span>
+						<select
+							#regionSelect
+							class="field"
+							name="region"
+							(change)="onRegion($event)"
+						>
+							@for (region of regions(); track region.id) {
+								<option
+									[value]="region.id"
+									[selected]="region.id === draftValue.region"
+								>
+									{{ region.label }} · {{ region.id }}
+								</option>
+							}
+						</select>
+						@if (suggested && suggested === draftValue.region) {
+							<span class="mt-1 block text-xs text-ok">{{ t.regionGuess }}</span>
+						}
+						@if (suggested && suggested !== draftValue.region) {
+							<button
+								type="button"
+								class="mt-2 text-sm font-semibold text-accent"
+								(click)="applySuggestion()"
+							>
+								{{ t.useRegion }}: {{ suggested }}
+							</button>
+						}
+					</label>
+
+					<label class="block">
+						<span class="label">{{ t.endpoint }}</span>
+						<span class="flex items-center gap-2">
+							<span class="text-sm text-muted">https://</span>
+							<input
+								class="field min-w-0"
+								[class.field-bad]="fieldError('endpoint', t)"
+								name="endpoint"
+								[value]="draftValue.endpoint"
+								(input)="onEndpoint($event)"
+								autocomplete="off"
+								spellcheck="false"
+								[attr.placeholder]="draftValue.endpoint"
+							/>
+						</span>
+						<span class="mt-1 block text-xs text-muted">{{ t.endpointHint }}</span>
+						@if (fieldError('endpoint', t); as message) {
+							<span class="field-error">{{ message }}</span>
+						}
+					</label>
+				}
 
 				<label class="block">
-					<span class="label">{{ t.accessKeyId }}</span>
+					<span class="label">{{
+						draftValue.provider === 'ftp' ? t.ftpUser : t.accessKeyId
+					}}</span>
 					<input
 						class="field font-mono"
 						[class.field-bad]="fieldError('accessKeyId', t)"
@@ -207,7 +294,7 @@
 						autocomplete="off"
 						spellcheck="false"
 						autocapitalize="off"
-						placeholder="004…"
+						[attr.placeholder]="draftValue.provider === 'ftp' ? 'anonymous' : '004…'"
 					/>
 					@if (fieldError('accessKeyId', t); as message) {
 						<span class="field-error">{{ message }}</span>
@@ -215,7 +302,9 @@
 				</label>
 
 				<label class="block">
-					<span class="label">{{ t.secret }}</span>
+					<span class="label">{{
+						draftValue.provider === 'ftp' ? t.ftpPassword : t.secret
+					}}</span>
 					<span class="relative block">
 						<input
 							class="field field-secret"
@@ -243,7 +332,9 @@
 					@if (fieldError('secret', t); as message) {
 						<span class="field-error">{{ message }}</span>
 					}
-					<span class="mt-1 block text-xs text-muted">{{ t.permissionHint }}</span>
+					<span class="mt-1 block text-xs text-muted">{{
+						draftValue.provider === 'ftp' ? t.ftpPasswordHint : t.permissionHint
+					}}</span>
 				</label>
 
 				@if (formError(); as error) {

@@ -38,6 +38,9 @@ dependencies:
   axios:
     specifier: ^1.12.2
     version: 1.20.0
+  basic-ftp:
+    specifier: ^6.2.3
+    version: 6.2.3
   rxjs:
     specifier: ~7.8.0
     version: 7.8.2
@@ -3363,6 +3366,11 @@ packages:
     engines: {node: '>=6.0.0'}
     hasBin: true
     dev: true
+
+  /basic-ftp@6.2.3:
+    resolution: {integrity: sha512-T7GYtQ2eKJUN5YORG7A8u2WfB9JMN0a4/wl3MI64qq2qTRfa3FXzoNq0DDojZDkDyStcL+TkfKsz4JHEZx5kGQ==}
+    engines: {node: '>=10.0.0'}
+    dev: false
 
   /beasties@0.4.1:
     resolution: {integrity: sha512-2Imdcw3LznDuxAbJM26RHniOLAzE6WgrK8OuvVXCQtNBS8rsnD9zsSEa3fHl4hHpUY7BYTlrpvtPVbvu9G6neg==}

@@ -24,4 +24,5 @@ export const routes: Routes = [
 		path: 'app',
 		loadComponent: () => import('./app').then((module) => module.App),
 	},
+	{ path: '**', redirectTo: '' },
 ];

@@ -2,10 +2,12 @@ import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ftpPort, isFtpHost, normalizeFtpHost, normalizeFtpRoot } from './ftp.mjs';
 import { KeystoreError } from './keystore.mjs';
+import { RequestError } from './request-error.mjs';
 import { serveStatic } from './static.mjs';
 import { createConnectionStore, defaultConnectionPath, publicStore } from './store.mjs';
-import { headObject, listObjects, openDownload, searchObjects, S3RequestError } from './s3.mjs';
+import { headObject, listObjects, openDownload, searchObjects } from './s3.mjs';
 import { checkForUpdate, lookupGitHubRelease, readAppVersion } from './update.mjs';
 
 export function startServer({
@@ -118,7 +120,7 @@ export function startServer({
 			send(res, 404, { code: 'NotFound', message: 'Unknown route' });
 		} catch (error) {
 			if (error?.code === 'ERR_CANCELED' || error?.name === 'CanceledError') return;
-			if (error instanceof S3RequestError) {
+			if (error instanceof RequestError) {
 				send(res, error.status || 502, { code: error.code, message: error.message });
 				return;
 			}
@@ -146,18 +148,19 @@ export function startServer({
 
 async function saveConnection(store, body) {
 	const provider = text(body.provider);
-	const region = text(body.region);
-	const endpoint = normalizeEndpoint(text(body.endpoint));
-	const bucket = text(body.bucket);
+	const ftp = provider === 'ftp';
+	if (!ftp && provider !== 'backblaze' && provider !== 'wasabi' && provider !== 's3') {
+		throw new HttpError(400, 'InvalidConnection', 'Connection fields are incomplete');
+	}
+	const endpoint = ftp ? normalizeFtpHost(body.endpoint) : normalizeEndpoint(text(body.endpoint));
+	const region = ftp ? text(body.region) || '21' : text(body.region);
+	const bucket = ftp ? normalizeFtpRoot(body.bucket) : text(body.bucket);
 	const accessKeyId = text(body.accessKeyId);
-	if (
-		(provider !== 'backblaze' && provider !== 'wasabi' && provider !== 's3') ||
-		!region ||
-		!endpoint ||
-		!bucket ||
-		!accessKeyId ||
-		/\s/.test(bucket)
-	) {
+	if (ftp) {
+		if (!isFtpHost(endpoint) || !ftpPort(region) || !bucket || !accessKeyId) {
+			throw new HttpError(400, 'InvalidConnection', 'Connection fields are incomplete');
+		}
+	} else if (!region || !endpoint || !bucket || !accessKeyId || /\s/.test(bucket)) {
 		throw new HttpError(400, 'InvalidConnection', 'Connection fields are incomplete');
 	}
 
@@ -170,16 +173,17 @@ async function saveConnection(store, body) {
 	if (!secretAccessKey && current && current.accessKeyId === accessKeyId) {
 		secretAccessKey = current.secretAccessKey;
 	}
-	if (!secretAccessKey) throw new HttpError(400, 'MissingSecret', 'Secret is required');
+	if (!secretAccessKey && !ftp) throw new HttpError(400, 'MissingSecret', 'Secret is required');
 
 	const connection = {
 		id: current?.id ?? randomUUID(),
 		provider,
-		region,
+		region: ftp ? String(ftpPort(region)) : region,
 		endpoint,
 		bucket,
 		accessKeyId,
 		secretAccessKey,
+		...(ftp ? { secure: body.secure === true } : {}),
 	};
 	await listObjects(connection, '', null, true, 1);
 	const connections = current
@@ -236,7 +240,7 @@ function text(value) {
 
 function normalizeEndpoint(value) {
 	return value
-		.replace(/^https?:\/\//i, '')
+		.replace(/^(https?|ftps?):\/\//i, '')
 		.replace(/\/.*$/, '')
 		.trim();
 }

@@ -92,6 +92,10 @@ export class DetailDialog {
 		this.closed.emit();
 	}
 
+	protected isFtp(): boolean {
+		return this.store.config()?.provider === 'ftp';
+	}
+
 	protected contentType(): string | null {
 		return this.meta()?.contentType ?? null;
 	}

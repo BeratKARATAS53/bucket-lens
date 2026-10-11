@@ -25,7 +25,7 @@ import {
 	messageForError,
 	sortEntries,
 } from './helpers/format';
-import { providerLabelKey } from './helpers/regions';
+import { connectionMeta, connectionTitle, providerLabelKey } from './helpers/regions';
 import { BucketEntry, KindFilter, S3Failure, SortKey } from './models/bucket';
 import { DetailDialog } from './components/detail-dialog';
 import { Icon, iconForEntry } from './components/icon';
@@ -47,6 +47,8 @@ export class App {
 	protected readonly demo = inject(DEMO_MODE, { optional: true }) === true;
 	protected readonly i18n = inject(I18nService);
 	protected readonly providerLabelKey = providerLabelKey;
+	protected readonly connectionTitle = connectionTitle;
+	protected readonly connectionMeta = connectionMeta;
 	protected readonly theme = inject(ThemeService);
 	protected readonly store = inject(ConnectionService);
 	protected readonly iconFor = iconForEntry;

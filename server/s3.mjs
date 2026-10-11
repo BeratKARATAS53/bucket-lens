@@ -1,15 +1,19 @@
 import axios from 'axios';
 import { AwsClient } from 'aws4fetch';
+import { headFtp, listFtp, openFtpDownload } from './ftp.mjs';
+import { RequestError } from './request-error.mjs';
 
-export class S3RequestError extends Error {
+export class S3RequestError extends RequestError {
 	constructor(status, code, message) {
-		super(message || code || 'S3 request failed');
-		this.status = status;
-		this.code = code;
+		super(status, code, message || code || 'S3 request failed');
+		this.name = 'S3RequestError';
 	}
 }
 
 export async function listObjects(connection, prefix, token, delimited, maxKeys, signal) {
+	if (connection?.provider === 'ftp') {
+		return listFtp(connection, prefix, token, delimited, maxKeys, signal);
+	}
 	const params = new URLSearchParams({
 		'list-type': '2',
 		'max-keys': String(maxKeys),
@@ -119,6 +123,7 @@ export async function searchObjects(
 }
 
 export async function headObject(connection, key) {
+	if (connection?.provider === 'ftp') return headFtp(connection, key);
 	const response = await signedRequest(connection, objectPath(key), 'HEAD');
 	if (response.status >= 400) throw await errorFromResponse(response);
 	return {
@@ -131,6 +136,7 @@ export async function headObject(connection, key) {
 }
 
 export async function openDownload(connection, key) {
+	if (connection?.provider === 'ftp') return openFtpDownload(connection, key);
 	const response = await signedRequest(connection, objectPath(key), 'GET', 'stream');
 	if (response.status >= 400) throw await errorFromResponse(response);
 	return response;

@@ -85,6 +85,57 @@ test('a missing keystore is reported when the secret is no longer on disk', asyn
 	}
 });
 
+test('an incomplete ftp connection is rejected before dialing', async () => {
+	const dir = await mkdtemp(join(tmpdir(), 'bucket-lens-web-'));
+	const server = await startServer({ port: 0, dataDir: dir, keystore: memoryKeystore() });
+	try {
+		const port = server.address().port;
+		const response = await fetch(`http://127.0.0.1:${port}/api/connection`, {
+			method: 'PUT',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({
+				provider: 'ftp',
+				region: '21',
+				endpoint: 'ftp://files.example.com/../../',
+				bucket: '/public',
+				accessKeyId: '',
+				secretAccessKey: '',
+			}),
+		});
+		assert.equal(response.status, 400);
+		assert.equal((await response.json()).code, 'InvalidConnection');
+	} finally {
+		await close(server);
+		await rm(dir, { recursive: true, force: true });
+	}
+});
+
+test('a refused ftp server is reported', async () => {
+	const dir = await mkdtemp(join(tmpdir(), 'bucket-lens-web-'));
+	const server = await startServer({ port: 0, dataDir: dir, keystore: memoryKeystore() });
+	try {
+		const port = server.address().port;
+		const response = await fetch(`http://127.0.0.1:${port}/api/connection`, {
+			method: 'PUT',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({
+				provider: 'ftp',
+				region: '1',
+				endpoint: '127.0.0.1',
+				bucket: '/',
+				accessKeyId: 'anonymous',
+				secretAccessKey: '',
+				secure: false,
+			}),
+		});
+		assert.equal(response.status, 502);
+		assert.equal((await response.json()).code, 'FtpRefused');
+	} finally {
+		await close(server);
+		await rm(dir, { recursive: true, force: true });
+	}
+});
+
 function memoryKeystore() {
 	const secrets = new Map();
 	return {

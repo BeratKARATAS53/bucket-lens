@@ -80,6 +80,7 @@ export function messageForError(kind: S3ErrorKind, t: Dictionary): string {
 		missing: t.errorMissing,
 		signature: t.errorSignature,
 		keystore: t.errorKeystore,
+		unreachable: t.errorUnreachable,
 		generic: t.errorGeneric,
 	};
 	return messages[kind];
@@ -126,7 +127,13 @@ export function formatDate(value: string | null, lang: Lang, style: 'short' | 'f
 	return new Intl.DateTimeFormat(
 		locale(lang),
 		style === 'short'
-			? { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }
+			? {
+					day: 'numeric',
+					month: 'short',
+					year: 'numeric',
+					hour: '2-digit',
+					minute: '2-digit',
+				}
 			: { dateStyle: 'medium', timeStyle: 'short' },
 	).format(date);
 }

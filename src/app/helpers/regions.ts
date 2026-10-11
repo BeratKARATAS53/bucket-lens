@@ -1,4 +1,4 @@
-export type ProviderId = 'backblaze' | 'wasabi' | 's3';
+export type ProviderId = 'backblaze' | 'wasabi' | 's3' | 'ftp';
 
 export interface StorageRegion {
 	id: string;
@@ -6,7 +6,7 @@ export interface StorageRegion {
 	endpoint: string;
 }
 
-export const PROVIDERS: readonly ProviderId[] = ['backblaze', 'wasabi', 's3'];
+export const PROVIDERS: readonly ProviderId[] = ['backblaze', 'wasabi', 's3', 'ftp'];
 
 const BACKBLAZE_REGIONS: readonly StorageRegion[] = [
 	{ id: 'us-west-000', label: 'US West', endpoint: 's3.us-west-000.backblazeb2.com' },
@@ -147,7 +147,7 @@ const S3_REGIONS: readonly StorageRegion[] = [
 	{ id: 'il-central-1', label: 'Israel (Tel Aviv)', endpoint: 's3.il-central-1.amazonaws.com' },
 ];
 
-const REGIONS: Record<ProviderId, readonly StorageRegion[]> = {
+const REGIONS: Record<Exclude<ProviderId, 'ftp'>, readonly StorageRegion[]> = {
 	backblaze: BACKBLAZE_REGIONS,
 	wasabi: WASABI_REGIONS,
 	s3: S3_REGIONS,
@@ -169,17 +169,20 @@ export function isProvider(value: string): value is ProviderId {
 
 export function providerLabelKey(
 	provider: string,
-): 'providerBackblaze' | 'providerWasabi' | 'providerS3' {
+): 'providerBackblaze' | 'providerWasabi' | 'providerS3' | 'providerFtp' {
 	if (provider === 'wasabi') return 'providerWasabi';
 	if (provider === 's3') return 'providerS3';
+	if (provider === 'ftp') return 'providerFtp';
 	return 'providerBackblaze';
 }
 
 export function regionsFor(provider: ProviderId): readonly StorageRegion[] {
+	if (provider === 'ftp') return [];
 	return REGIONS[provider];
 }
 
 export function defaultRegion(provider: ProviderId): StorageRegion {
+	if (provider === 'ftp') return { id: '21', label: '21', endpoint: '' };
 	const regions = regionsFor(provider);
 	const preferred = provider === 'backblaze' ? 'us-west-004' : 'us-east-1';
 	return regions.find((region) => region.id === preferred) ?? regions[0];
@@ -196,7 +199,7 @@ export function regionById(provider: ProviderId, id: string): StorageRegion | un
 }
 
 export function isKnownEndpoint(endpoint: string): boolean {
-	return PROVIDERS.some((provider) =>
+	return (['backblaze', 'wasabi', 's3'] as const).some((provider) =>
 		regionsFor(provider).some((region) => region.endpoint === endpoint),
 	);
 }
@@ -204,19 +207,52 @@ export function isKnownEndpoint(endpoint: string): boolean {
 export function normalizeEndpoint(value: string): string {
 	return value
 		.trim()
-		.replace(/^https?:\/\//i, '')
+		.replace(/^(https?|ftps?):\/\//i, '')
 		.replace(/\/.*$/, '')
 		.trim();
 }
 
+export function connectionTitle(connection: {
+	provider: string;
+	bucket: string;
+	endpoint: string;
+}): string {
+	if (connection.provider !== 'ftp') return connection.bucket;
+	const path = connection.bucket.replace(/^\/+|\/+$/g, '');
+	return path || connection.endpoint;
+}
+
+export function connectionMeta(connection: {
+	provider: string;
+	region: string;
+	endpoint: string;
+}): string {
+	if (connection.provider !== 'ftp') return connection.region;
+	const port = connection.region && connection.region !== '21' ? `:${connection.region}` : '';
+	return `${connection.endpoint}${port}`;
+}
+
 export function objectUrl(
-	connection: { provider: string; endpoint: string; bucket: string },
+	connection: {
+		provider: string;
+		endpoint: string;
+		bucket: string;
+		region?: string;
+		secure?: boolean;
+	},
 	key: string,
 ): string {
 	const encodedKey = key
 		.split('/')
 		.map((part) => encodeURIComponent(part))
 		.join('/');
+	if (connection.provider === 'ftp') {
+		const scheme = connection.secure ? 'ftps' : 'ftp';
+		const port = connection.region && connection.region !== '21' ? `:${connection.region}` : '';
+		const root = connection.bucket.replace(/^\/+|\/+$/g, '');
+		const path = [root, key.replace(/^\/+/, '')].filter(Boolean).join('/');
+		return `${scheme}://${connection.endpoint}${port}/${path}`;
+	}
 	if (connection.provider === 's3') {
 		return `https://${connection.bucket}.${connection.endpoint}/${encodedKey}`;
 	}

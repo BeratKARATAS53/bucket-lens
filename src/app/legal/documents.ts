@@ -24,7 +24,7 @@ const tr: Record<LegalId, LegalDocument> = {
 			},
 			{
 				heading: 'Kovadaki dosyalar',
-				body: 'Kurduğun uygulama, Backblaze B2, Wasabi veya Amazon S3 üzerinde senin erişimin olan dosyaları listeler. Bu dosyalar burada barındırılmaz. Geliştirici onları görmez.',
+				body: 'Kurduğun uygulama, Backblaze B2, Wasabi, Amazon S3 veya bir FTP sunucusunda senin erişimin olan dosyaları listeler. Bu dosyalar burada barındırılmaz. Geliştirici onları görmez.',
 			},
 			{
 				heading: 'Nasıl kullanılır',
@@ -42,7 +42,7 @@ const tr: Record<LegalId, LegalDocument> = {
 			},
 			{
 				heading: 'Hangi veri işlenir',
-				body: 'Site; ad, e-posta, kova adı ve gizli anahtar toplamaz. Dilin ve açık ya da koyu görünümün tarayıcının yerel deposunda kalır, geliştiriciye iletilmez. Kurulu uygulamada kova adı, bölge, anahtar kimliği ve gizli anahtar senin bilgisayarında durur.',
+				body: 'Site; ad, e-posta, kova adı ve gizli anahtar toplamaz. Dilin ve açık ya da koyu görünümün tarayıcının yerel deposunda kalır, geliştiriciye iletilmez. Kurulu uygulamada kova adı, bölge, anahtar kimliği, FTP adresi ve gizli anahtar ya da parola senin bilgisayarında durur.',
 			},
 			{
 				heading: 'Amaç',
@@ -82,7 +82,7 @@ const tr: Record<LegalId, LegalDocument> = {
 		blocks: [
 			{
 				heading: 'Ücret',
-				body: 'BucketLens ücretsizdir. Backblaze, Wasabi veya Amazon S3 hesabının bedeli o sağlayıcıya aittir.',
+				body: 'BucketLens ücretsizdir. Backblaze, Wasabi, Amazon S3 veya FTP hesabının bedeli o sağlayıcıya aittir.',
 			},
 			{
 				heading: 'Anahtar',
@@ -111,7 +111,7 @@ const en: Record<LegalId, LegalDocument> = {
 			},
 			{
 				heading: 'Files in a bucket',
-				body: 'The installed app lists files you can already reach on Backblaze B2, Wasabi, or Amazon S3. Those files are not hosted here. The developer does not see them.',
+				body: 'The installed app lists files you can already reach on Backblaze B2, Wasabi, Amazon S3, or an FTP server. Those files are not hosted here. The developer does not see them.',
 			},
 			{
 				heading: 'How to use it',
@@ -129,7 +129,7 @@ const en: Record<LegalId, LegalDocument> = {
 			},
 			{
 				heading: 'What is processed',
-				body: 'The site does not collect your name, email, bucket name, or secret key. Your language and light or dark theme stay in the browser’s local storage and are not sent to the developer. In the installed app, the bucket name, region, key id, and secret key stay on your computer.',
+				body: 'The site does not collect your name, email, bucket name, or secret key. Your language and light or dark theme stay in the browser’s local storage and are not sent to the developer. In the installed app, the bucket name, region, key id, FTP address, and secret key or password stay on your computer.',
 			},
 			{
 				heading: 'Purpose',
@@ -173,7 +173,7 @@ const en: Record<LegalId, LegalDocument> = {
 		blocks: [
 			{
 				heading: 'Price',
-				body: 'BucketLens is free. Any fee for a Backblaze, Wasabi, or Amazon S3 account belongs to that provider.',
+				body: 'BucketLens is free. Any fee for a Backblaze, Wasabi, Amazon S3, or FTP account belongs to that provider.',
 			},
 			{
 				heading: 'Your key',

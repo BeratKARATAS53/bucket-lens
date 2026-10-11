@@ -11,7 +11,10 @@ export function defaultConnectionPath() {
 	return join(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'connection.json');
 }
 
-export function createConnectionStore({ filePath = defaultConnectionPath(), keystore = createKeystore() } = {}) {
+export function createConnectionStore({
+	filePath = defaultConnectionPath(),
+	keystore = createKeystore(),
+} = {}) {
 	return {
 		connectionPath: () => filePath,
 		readStore: () => readStore(filePath, keystore),
@@ -107,6 +110,7 @@ export function publicConnection(connection) {
 		bucket: connection.bucket,
 		accessKeyId: connection.accessKeyId,
 		hasSecret: Boolean(connection.secretAccessKey),
+		...(connection.provider === 'ftp' ? { secure: connection.secure === true } : {}),
 	};
 }
 
@@ -118,18 +122,24 @@ function persistedConnection(connection) {
 		endpoint: connection.endpoint,
 		bucket: connection.bucket,
 		accessKeyId: connection.accessKeyId,
+		...(connection.provider === 'ftp' ? { secure: connection.secure === true } : {}),
 	};
 }
 
 function normalizeConnection(value) {
 	const provider = typeof value.provider === 'string' ? value.provider.trim() : '';
 	return {
-		provider: provider === 'wasabi' || provider === 's3' ? provider : 'backblaze',
+		provider:
+			provider === 'wasabi' || provider === 's3' || provider === 'ftp'
+				? provider
+				: 'backblaze',
 		region: value.region.trim(),
 		endpoint: value.endpoint.trim(),
 		bucket: value.bucket.trim(),
 		accessKeyId: value.accessKeyId.trim(),
-		secretAccessKey: typeof value.secretAccessKey === 'string' ? value.secretAccessKey.trim() : '',
+		secretAccessKey:
+			typeof value.secretAccessKey === 'string' ? value.secretAccessKey.trim() : '',
+		secure: value.secure === true,
 	};
 }
 

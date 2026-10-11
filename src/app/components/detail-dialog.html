@@ -59,10 +59,12 @@
 				<dt class="text-xs text-muted">{{ t.modified }}</dt>
 				<dd class="mt-1 font-semibold">{{ formatDate(modified(), lang, 'full') }}</dd>
 			</div>
-			<div class="rounded-2xl bg-sunken px-3 py-3">
-				<dt class="text-xs text-muted">{{ t.storageClass }}</dt>
-				<dd class="mt-1 font-semibold break-all">{{ storageClass() || t.unknown }}</dd>
-			</div>
+			@if (!isFtp()) {
+				<div class="rounded-2xl bg-sunken px-3 py-3">
+					<dt class="text-xs text-muted">{{ t.storageClass }}</dt>
+					<dd class="mt-1 font-semibold break-all">{{ storageClass() || t.unknown }}</dd>
+				</div>
+			}
 			<div class="rounded-2xl bg-sunken px-3 py-3">
 				<dt class="text-xs text-muted">{{ t.contentType }}</dt>
 				<dd class="mt-1 font-semibold break-all">
@@ -75,10 +77,12 @@
 			</div>
 		</dl>
 
-		<div class="mt-3 rounded-2xl bg-sunken px-3 py-3">
-			<p class="text-xs text-muted">{{ t.etag }}</p>
-			<p class="mt-1 font-mono text-xs break-all">{{ etag() || t.unknown }}</p>
-		</div>
+		@if (!isFtp()) {
+			<div class="mt-3 rounded-2xl bg-sunken px-3 py-3">
+				<p class="text-xs text-muted">{{ t.etag }}</p>
+				<p class="mt-1 font-mono text-xs break-all">{{ etag() || t.unknown }}</p>
+			</div>
+		}
 
 		@if (downloadError(); as failure) {
 			<p class="mt-3 rounded-2xl bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">

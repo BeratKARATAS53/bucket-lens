@@ -33,6 +33,7 @@
 		"@napi-rs/keyring": "^2.1.1",
 		"aws4fetch": "^1.0.20",
 		"axios": "^1.12.2",
+		"basic-ftp": "^6.2.3",
 		"rxjs": "~7.8.0",
 		"tslib": "^2.3.0"
 	},
@@ -74,12 +75,17 @@
 			"dist/bucket-lens/**/*",
 			"package.json"
 		],
-		"asarUnpack": ["**/*.node"],
+		"asarUnpack": [
+			"**/*.node"
+		],
 		"linux": {
 			"icon": "public/logo.png",
 			"category": "Utility",
 			"syncDesktopName": true,
-			"target": ["deb", "AppImage"]
+			"target": [
+				"deb",
+				"AppImage"
+			]
 		},
 		"deb": {
 			"artifactName": "bucket-lens-linux-amd64.${ext}"
@@ -89,7 +95,9 @@
 		},
 		"win": {
 			"icon": "public/logo.png",
-			"target": ["nsis"]
+			"target": [
+				"nsis"
+			]
 		},
 		"nsis": {
 			"oneClick": true,

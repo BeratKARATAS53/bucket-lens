@@ -17,6 +17,8 @@ import { Dictionary } from '../helpers/i18n';
 import {
 	PROVIDERS,
 	ProviderId,
+	connectionMeta,
+	connectionTitle,
 	defaultRegion,
 	isKnownEndpoint,
 	isProvider,
@@ -41,6 +43,8 @@ export class SettingsDialog {
 	protected readonly i18n = inject(I18nService);
 	protected readonly providers = PROVIDERS;
 	protected readonly providerLabelKey = providerLabelKey;
+	protected readonly connectionTitle = connectionTitle;
+	protected readonly connectionMeta = connectionMeta;
 	protected readonly regions = computed(() => regionsFor(this.draft().provider));
 	protected readonly store = inject(ConnectionService);
 	private readonly panel = viewChild<ElementRef<HTMLElement>>('panel');
@@ -66,14 +70,18 @@ export class SettingsDialog {
 	protected readonly errors = computed(() => {
 		const draft = this.draft();
 		const editing = this.editing();
+		const ftp = draft.provider === 'ftp';
 		const sameKey = editing?.accessKeyId === draft.accessKeyId.trim();
 		const secret = draft.secretAccessKey.trim() || (editing?.hasSecret && sameKey);
 		const bucket = draft.bucket.trim();
+		const host = normalizeEndpoint(draft.endpoint);
+		const port = Number(draft.region);
 		return {
-			bucket: !bucket ? 'required' : /\s/.test(bucket) ? 'bucket' : null,
-			endpoint: !normalizeEndpoint(draft.endpoint) ? 'required' : null,
+			bucket: ftp ? null : !bucket ? 'required' : /\s/.test(bucket) ? 'bucket' : null,
+			endpoint: !host ? 'required' : ftp && /[\s/@:\\]/.test(host) ? 'host' : null,
+			port: !ftp ? null : !Number.isInteger(port) || port < 1 || port > 65535 ? 'port' : null,
 			accessKeyId: !draft.accessKeyId.trim() ? 'required' : null,
-			secret: !secret ? 'required' : null,
+			secret: ftp || secret ? null : 'required',
 		} as const;
 	});
 	protected readonly valid = computed(() =>
@@ -108,12 +116,14 @@ export class SettingsDialog {
 	}
 
 	protected fieldError(
-		field: 'bucket' | 'endpoint' | 'accessKeyId' | 'secret',
+		field: 'bucket' | 'endpoint' | 'port' | 'accessKeyId' | 'secret',
 		t: Dictionary,
 	): string | null {
 		if (!this.submitted()) return null;
 		const code = this.errors()[field];
 		if (code === 'bucket') return t.validationBucket;
+		if (code === 'host') return t.validationHost;
+		if (code === 'port') return t.validationPort;
 		if (code === 'required') return t.validationRequired;
 		return null;
 	}
@@ -150,6 +160,7 @@ export class SettingsDialog {
 			bucket: item.bucket,
 			accessKeyId: item.accessKeyId,
 			secretAccessKey: '',
+			secure: item.secure === true,
 		});
 		this.screen.set('form');
 	}
@@ -203,11 +214,25 @@ export class SettingsDialog {
 		const provider = providerFrom(valueFrom(event));
 		const draft = this.draft();
 		if (provider === draft.provider) return;
+		if (provider === 'ftp') {
+			this.patch({
+				provider,
+				region: '21',
+				endpoint: '',
+				bucket: '/',
+				secure: false,
+			});
+			return;
+		}
 		const region = defaultRegion(provider);
+		const fromFtp = draft.provider === 'ftp';
 		this.patch({
 			provider,
 			region: region.id,
-			endpoint: isDefaultEndpoint(draft.endpoint) ? region.endpoint : draft.endpoint,
+			endpoint:
+				fromFtp || isDefaultEndpoint(draft.endpoint) ? region.endpoint : draft.endpoint,
+			bucket: fromFtp ? '' : draft.bucket,
+			secure: false,
 		});
 	}
 
@@ -225,6 +250,14 @@ export class SettingsDialog {
 
 	protected onEndpoint(event: Event): void {
 		this.patch({ endpoint: valueFrom(event) });
+	}
+
+	protected onPort(event: Event): void {
+		this.patch({ region: valueFrom(event) });
+	}
+
+	protected toggleSecure(): void {
+		this.patch({ secure: this.draft().secure !== true });
 	}
 
 	protected onAccessKey(event: Event): void {

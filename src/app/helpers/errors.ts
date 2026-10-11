@@ -17,6 +17,9 @@ export function classifyS3Error(error: unknown): S3Failure {
 	}
 	if (code === 'NoSuchKey') return { kind: 'missing', code };
 	if (code === 'KeystoreUnavailable') return { kind: 'keystore', code };
+	if (code === 'FtpHost' || code === 'FtpRefused' || code === 'FtpTimeout') {
+		return { kind: 'unreachable', code };
+	}
 	if (status === 404 || code === 'NoSuchBucket') return { kind: 'notFound', code };
 	if (
 		status === 401 ||

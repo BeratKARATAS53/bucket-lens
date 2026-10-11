@@ -100,6 +100,36 @@ test('plaintext remains on disk when the keystore cannot take it', async () => {
 	await rm(dir, { recursive: true, force: true });
 });
 
+test('an ftp password and tls flag round-trip through the keystore', async () => {
+	const dir = await mkdtemp(join(tmpdir(), 'bucket-lens-store-'));
+	const filePath = join(dir, 'connection.json');
+	const secrets = new Map();
+	const store = createConnectionStore({ filePath, keystore: memoryKeystore(secrets) });
+	await store.writeStore({
+		activeId: 'ftp',
+		connections: [
+			{
+				id: 'ftp',
+				provider: 'ftp',
+				region: '2121',
+				endpoint: 'files.example.com',
+				bucket: 'public',
+				accessKeyId: 'ada',
+				secretAccessKey: 'ftp-secret',
+				secure: true,
+			},
+		],
+	});
+	const onDisk = await readFile(filePath, 'utf8');
+	assert.equal(onDisk.includes('ftp-secret'), false);
+	assert.equal(onDisk.includes('"secure": true'), true);
+	const loaded = await store.readStore();
+	assert.equal(loaded.connections[0].provider, 'ftp');
+	assert.equal(loaded.connections[0].secretAccessKey, 'ftp-secret');
+	assert.equal(loaded.connections[0].secure, true);
+	await rm(dir, { recursive: true, force: true });
+});
+
 function memoryKeystore(secrets) {
 	return {
 		async readSecret(id) {
