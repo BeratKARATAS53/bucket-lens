@@ -1,13 +1,15 @@
 ## Türkçe
 
-- FTP sunucusuna bağlanma eklendi. Adres alan adı ya da IPv4 olarak alınır, port ayrı girilir.
-- Açılış klasörü ve FTPS desteği geliştirildi.
-- Gezinme, arama ve indirme FTP klasörlerine genişletildi.
+- Açık klasöre dosya yükleme eklendi. Dosyalar yükleme penceresine ya da doğrudan listeye bırakılır. Aynı ad klasörde varsa uyarı çıkar. Mevcut dosya güncellenebilir ya da yenisi yanına, yeni bir adla eklenebilir.
+- Büyük bir dosya indirilirken sağ üstte ilerleme çubuğu görünür. İndirme bitene kadar pencere kapanmaz.
+- Dosya yolunun yanındaki simgeyle yol kopyalanır. S3 kovalarında süreli bağlantı oluşturulabilir. FTP'de bu bağlantı yoktur.
+- Ubuntu ve Debian'da menü ve masaüstü ikonunun görünmemesi düzeltildi.
 
 ---
 
 ## English
 
-- Connecting to an FTP server was added. The address is a host name or an IPv4 address, and the port is entered separately.
-- A starting folder and FTPS support were developed.
-- Browsing, search, and download were extended to FTP folders.
+- Uploading into the open folder was added. Files can be dropped on the upload window or straight onto the list. If that name is already in the folder, a warning appears. The existing file can be updated, or the new one can be added beside it under a new name.
+- A progress bar appears at the top right while a large file downloads. The window stays open until the download finishes.
+- The path can be copied from the icon beside it. A presigned URL can be created for S3 buckets. FTP does not offer this link.
+- The menu and desktop icon not appearing on Ubuntu and Debian was fixed.

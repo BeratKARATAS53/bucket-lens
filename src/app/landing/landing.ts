@@ -11,6 +11,7 @@ const release =
 	'https://github.com/BeratKARATAS53/BucketLens/releases/latest/download';
 
 type DownloadId = 'windows' | 'deb' | 'appimage';
+type FaqAnswer = keyof Dictionary | readonly (keyof Dictionary)[];
 type Platform = 'windows' | 'linux' | 'mac' | 'other';
 
 const downloads: { id: DownloadId; platform: Platform; href: string }[] = [
@@ -48,19 +49,36 @@ export class Landing {
 	protected readonly downloads = [...downloads].sort(
 		(left, right) => Number(right.platform === this.platform) - Number(left.platform === this.platform),
 	);
-	protected readonly faqs: { q: keyof Dictionary; a: keyof Dictionary }[] = [
+	protected readonly faqs: { q: keyof Dictionary; a: FaqAnswer }[] = [
 		{ q: 'faqUse', a: 'faqUseA' },
-		{ q: 'faqActions', a: 'faqActionsA' },
+		{
+			q: 'faqActions',
+			a: [
+				'faqActionsList',
+				'faqActionsUpload',
+				'faqActionsConflict',
+				'faqActionsLink',
+				'faqActionsDelete',
+			],
+		},
 		{ q: 'faqSystems', a: 'faqSystemsA' },
 		{ q: 'faqPrice', a: 'faqPriceA' },
 		{ q: 'faqKey', a: 'faqKeyA' },
 		{ q: 'faqDemo', a: 'faqDemoA' },
 		{ q: 'faqSmart', a: 'faqSmartA' },
 	];
-	protected readonly openFaq = signal<keyof Dictionary | null>(null);
+	protected readonly openFaq = signal<keyof Dictionary | null>('faqUse');
 
 	protected toggleFaq(id: keyof Dictionary): void {
 		this.openFaq.update((current) => (current === id ? null : id));
+	}
+
+	protected paragraph(answer: FaqAnswer): keyof Dictionary | null {
+		return typeof answer === 'string' ? answer : null;
+	}
+
+	protected lines(answer: FaqAnswer): readonly (keyof Dictionary)[] | null {
+		return typeof answer === 'string' ? null : answer;
 	}
 
 	protected label(id: DownloadId): string {

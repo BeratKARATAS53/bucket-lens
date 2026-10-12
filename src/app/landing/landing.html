@@ -97,7 +97,15 @@
 							/>
 						</button>
 						@if (openFaq() === item.q) {
-							<p class="pb-4 text-pretty text-sm text-muted">{{ t[item.a] }}</p>
+							@if (paragraph(item.a); as key) {
+								<p class="pb-4 text-pretty text-sm text-muted">{{ t[key] }}</p>
+							} @else if (lines(item.a); as keys) {
+								<ul class="list-disc space-y-2 pb-4 pl-5 text-pretty text-sm text-muted">
+									@for (key of keys; track key) {
+										<li>{{ t[key] }}</li>
+									}
+								</ul>
+							}
 						}
 					</div>
 				}

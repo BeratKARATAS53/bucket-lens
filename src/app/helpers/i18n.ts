@@ -1,5 +1,5 @@
 const tr = {
-	appTitle: 'BucketLens | Backblaze, Wasabi, S3 Dosya Sistemi',
+	appTitle: 'BucketLens | Backblaze, Wasabi, S3, FTP Dosya Sistemi',
 	tagline: 'Backblaze, Wasabi, Amazon S3 ve FTP',
 	localOnly: 'Anahtar bu bilgisayarda kalır',
 	settings: 'Ayarlar',
@@ -166,10 +166,17 @@ const tr = {
 	faqTitle: 'Sıkça sorulan sorular',
 	faqUse: 'Nasıl kullanılır?',
 	faqUseA:
-		'Uygulamayı indirip kur. Anahtarı kaydet, kova adını yaz. Klasörler açılır. Dosyayı bulup indirebilirsin. Kurmadan önce listedeki görüntüye tıklayıp örneğe bakabilirsin.',
+		'Uygulamayı indirip kur. Anahtarı kaydet, kova adını yaz. Klasörler açılır. Dosyayı bulup indirebilir, açık klasöre yeni dosya yükleyebilirsin. Kurmadan önce listedeki görüntüye tıklayıp örneğe bakabilirsin.',
 	faqActions: 'Hangi işlemleri yapabilirim?',
-	faqActionsA:
-		'Dosyaları listeleyip indirebilirsin. Açık klasöre dosya yükleyebilir, aynı adlı dosyayı güncelleyebilirsin. Silme sonra gelecek.',
+	faqActionsList:
+		'Dosyaları listeleyip indirebilirsin. Büyük dosyada sağ üstte ilerleme görünür ve bitene kadar pencere açık kalır.',
+	faqActionsUpload:
+		'Açık klasöre dosya yükleyebilirsin. Pencereye ya da doğrudan listeye bırakman yeter.',
+	faqActionsConflict:
+		'Aynı ad varsa uyarı çıkar. Mevcut dosyayı güncelleyebilir ya da yenisini yanına ekleyebilirsin.',
+	faqActionsLink:
+		'S3 kovalarında süreli bağlantı oluşturulabilir. FTP’de bu bağlantı yoktur.',
+	faqActionsDelete: 'Silme sonra gelecek.',
 	faqSystems: 'Hangi sistemler destekleniyor?',
 	faqSystemsA:
 		'Windows kurulum dosyasıyla gelir. Debian ve Ubuntu deb paketi kullanır. Diğer Linux dağıtımlarında tek dosya çalışır. macOS kurulumu yok.',
@@ -184,7 +191,7 @@ const tr = {
 		'Anahtar bu bilgisayarda kalır. Listeleme ve okuma yeter. Dosya yüklemek için yazma izni de gerekir. Linux’ta kaydın durması için GNOME Keyring veya KWallet açık olmalı.',
 	faqDemo: 'Demoda kendi kovama bakabilir miyim?',
 	faqDemoA:
-		'Demo örnek bir listedir. Kendi kovan için uygulamayı kurup anahtarı orada kaydedersin.',
+		'Demo örnek bir listedir. Yükleme ve süreli bağlantı orada çalışmaz. Kendi kovan için uygulamayı kurup anahtarı orada kaydedersin.',
 	footerBy: '{name} tarafından geliştirildi',
 	footerRights: '© 2026 tüm hakları saklıdır',
 	footerLegal: 'Yasal belgeler',
@@ -195,7 +202,7 @@ const tr = {
 } as const;
 
 const en: { [K in keyof typeof tr]: string } = {
-	appTitle: 'BucketLens | Backblaze, Wasabi, S3 Filesystem',
+	appTitle: 'BucketLens | Backblaze, Wasabi, S3, FTP Filesystem',
 	tagline: 'Backblaze, Wasabi, Amazon S3, and FTP',
 	localOnly: 'The key stays on this computer',
 	settings: 'Settings',
@@ -364,10 +371,17 @@ const en: { [K in keyof typeof tr]: string } = {
 	faqTitle: 'Frequently asked questions',
 	faqUse: 'How do I use it?',
 	faqUseA:
-		'Download and install the app. Save your key and enter the bucket name. Folders open. Find a file and download it. Before you install, click the list image to see a sample.',
+		'Download and install the app. Save your key and enter the bucket name. Folders open. Find a file and download it, or upload a new file into the open folder. Before you install, click the list image to see a sample.',
 	faqActions: 'What can I do?',
-	faqActionsA:
-		'You can list files and download them. You can upload into the open folder and update a file that already has the same name. Deleting comes later.',
+	faqActionsList:
+		'You can list files and download them. A large download shows its progress at the top right, and the window stays open until it finishes.',
+	faqActionsUpload:
+		'You can upload into the open folder. Drop the file on the window or straight onto the list.',
+	faqActionsConflict:
+		'If that name is already there, a warning appears. You can update the existing file or add the new one beside it.',
+	faqActionsLink:
+		'A presigned URL can be created for S3 buckets. FTP does not offer that link.',
+	faqActionsDelete: 'Deleting comes later.',
 	faqSystems: 'Which systems are supported?',
 	faqSystemsA:
 		'Windows comes with an installer. Debian and Ubuntu use a deb package. Other Linux distributions run the single file. There is no macOS build.',
@@ -382,7 +396,7 @@ const en: { [K in keyof typeof tr]: string } = {
 		'The key stays on this computer. Listing and reading are enough to browse. Uploading also needs write permission. On Linux, GNOME Keyring or KWallet needs to be open so the key can be saved.',
 	faqDemo: 'Can I open my own bucket in the demo?',
 	faqDemoA:
-		'The demo is a sample list. To open your own bucket, install the app and save the key there.',
+		'The demo is a sample list. Upload and presigned URLs do not run there. To open your own bucket, install the app and save the key there.',
 	footerBy: 'Developed by {name}',
 	footerRights: '© 2026 all rights reserved',
 	footerLegal: 'Legal',
