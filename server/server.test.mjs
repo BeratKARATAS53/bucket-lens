@@ -110,6 +110,98 @@ test('an incomplete ftp connection is rejected before dialing', async () => {
 	}
 });
 
+test('upload and presign reject bad keys before opening a connection', async () => {
+	const dir = await mkdtemp(join(tmpdir(), 'bucket-lens-web-'));
+	const server = await startServer({ port: 0, dataDir: dir, keystore: memoryKeystore() });
+	try {
+		const port = server.address().port;
+		const upload = await fetch(
+			`http://127.0.0.1:${port}/api/objects?key=${encodeURIComponent('../secret')}`,
+			{
+				method: 'PUT',
+				headers: { 'content-type': 'text/plain', 'content-length': '4' },
+				body: 'test',
+			},
+		);
+		assert.equal(upload.status, 400);
+		assert.equal((await upload.json()).code, 'InvalidKey');
+		const missing = await fetch(`http://127.0.0.1:${port}/api/objects/presign?minutes=15`);
+		assert.equal(missing.status, 400);
+		assert.equal((await missing.json()).code, 'MissingKey');
+		const duration = await fetch(
+			`http://127.0.0.1:${port}/api/objects/presign?key=a.txt&minutes=45`,
+		);
+		assert.equal(duration.status, 400);
+		assert.equal((await duration.json()).code, 'InvalidDuration');
+	} finally {
+		await close(server);
+		await rm(dir, { recursive: true, force: true });
+	}
+});
+
+test('a presigned url carries the chosen lifetime and ftp refuses it', async () => {
+	const dir = await mkdtemp(join(tmpdir(), 'bucket-lens-web-'));
+	const server = await startServer({ port: 0, dataDir: dir, keystore: memoryKeystore() });
+	try {
+		await writeFile(
+			join(dir, 'connection.json'),
+			`${JSON.stringify({
+				activeId: 's3',
+				connections: [
+					{
+						id: 's3',
+						provider: 's3',
+						region: 'us-east-1',
+						endpoint: 'example.invalid',
+						bucket: 'photos',
+						accessKeyId: 'AKIAEXAMPLE',
+						secretAccessKey: 'secretsecretsecretsecretsecret12',
+					},
+				],
+			})}\n`,
+		);
+		const port = server.address().port;
+		const response = await fetch(
+			`http://127.0.0.1:${port}/api/objects/presign?key=${encodeURIComponent('album/a file.txt')}&minutes=5`,
+		);
+		assert.equal(response.status, 200);
+		const body = await response.json();
+		assert.equal(body.expiresIn, 300);
+		const signed = new URL(body.url);
+		assert.equal(signed.hostname, 'photos.example.invalid');
+		assert.equal(signed.pathname, '/album/a%20file.txt');
+		assert.equal(signed.searchParams.get('X-Amz-Expires'), '300');
+		assert.ok(signed.searchParams.get('X-Amz-Signature'));
+
+		await writeFile(
+			join(dir, 'connection.json'),
+			`${JSON.stringify({
+				activeId: 'ftp',
+				connections: [
+					{
+						id: 'ftp',
+						provider: 'ftp',
+						region: '21',
+						endpoint: 'files.example.com',
+						bucket: '/',
+						accessKeyId: 'anonymous',
+						secretAccessKey: '',
+						secure: false,
+					},
+				],
+			})}\n`,
+		);
+		const ftp = await fetch(
+			`http://127.0.0.1:${port}/api/objects/presign?key=a.txt&minutes=15`,
+		);
+		assert.equal(ftp.status, 400);
+		assert.equal((await ftp.json()).code, 'PresignUnsupported');
+	} finally {
+		await close(server);
+		await rm(dir, { recursive: true, force: true });
+	}
+});
+
 test('a refused ftp server is reported', async () => {
 	const dir = await mkdtemp(join(tmpdir(), 'bucket-lens-web-'));
 	const server = await startServer({ port: 0, dataDir: dir, keystore: memoryKeystore() });

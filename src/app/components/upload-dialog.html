@@ -1,0 +1,182 @@
+@let t = i18n.t();
+@let lang = i18n.lang();
+
+<div class="fixed inset-0 z-40 grid place-items-center p-4">
+	<div class="absolute inset-0 bg-ink/45" (click)="requestClose()"></div>
+	<section
+		#panel
+		tabindex="-1"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="upload-title"
+		class="rise relative z-10 flex max-h-[90dvh] w-full max-w-lg flex-col overflow-y-auto rounded-[1.75rem] bg-raised p-5 text-ink shadow-2xl sm:p-6"
+		[attr.aria-busy]="busy()"
+	>
+		<div class="flex items-start justify-between gap-3">
+			<div class="min-w-0">
+				<h2 id="upload-title" class="text-3xl leading-none font-semibold">
+					{{ t.uploadTitle }}
+				</h2>
+				<p class="mt-2 truncate font-mono text-xs text-muted" [attr.title]="location()">
+					{{ location() }}
+				</p>
+			</div>
+			<button
+				type="button"
+				class="focus-ring grid size-10 shrink-0 place-items-center rounded-full bg-sunken"
+				(click)="requestClose()"
+				[disabled]="busy()"
+				[attr.aria-label]="t.close"
+			>
+				<app-icon name="close" class="size-5" />
+			</button>
+		</div>
+
+		<div class="mt-4 text-sm leading-6 text-muted">
+			<p>{{ t.uploadIntro }}</p>
+			<ul class="mt-2 list-disc space-y-1.5 pl-5">
+				<li>{{ t.uploadStepDrop }}</li>
+				<li>{{ t.uploadStepConflict }}</li>
+				<li>{{ t.uploadStepDirect }}</li>
+			</ul>
+		</div>
+
+		<div
+			class="mt-4 rounded-[1.5rem] border-2 border-dashed px-4 py-8 text-center transition"
+			[class.border-accent]="dropping()"
+			[class.bg-accent-soft]="dropping()"
+			[class.border-line]="!dropping()"
+		>
+			<span
+				class="mx-auto grid size-12 place-items-center rounded-2xl bg-accent-soft text-accent"
+			>
+				<app-icon name="upload" class="size-6" />
+			</span>
+			<p class="mt-3 font-medium">{{ dropping() ? t.uploadDropActive : t.uploadDrop }}</p>
+			<button type="button" class="btn btn-primary mt-4" (click)="picker.click()">
+				{{ t.uploadPick }}
+			</button>
+			<input
+				#picker
+				class="hidden"
+				type="file"
+				multiple
+				tabindex="-1"
+				(change)="onPick($event)"
+			/>
+		</div>
+
+		@if (items().length) {
+			<ul class="mt-4 flex flex-col gap-2">
+				@for (item of items(); track item.id) {
+					<li class="rounded-2xl bg-sunken px-3 py-3">
+						<div class="flex items-start justify-between gap-3">
+							<div class="min-w-0">
+								<p class="truncate font-medium" [attr.title]="item.name">
+									{{ item.name }}
+								</p>
+								@if (item.name !== item.originalName) {
+									<p
+										class="truncate text-xs text-muted"
+										[attr.title]="item.originalName"
+									>
+										{{ item.originalName }}
+									</p>
+								}
+								<p class="mt-0.5 text-xs text-muted tabular-nums">
+									{{ formatBytes(item.file.size, lang) }}
+								</p>
+							</div>
+							@if (item.status === 'checking' || item.status === 'ready') {
+								<span class="shrink-0 text-xs text-muted">{{
+									t.uploadChecking
+								}}</span>
+							} @else if (item.status === 'uploading') {
+								<span class="shrink-0 text-xs tabular-nums text-muted"
+									>{{ item.progress }}%</span
+								>
+							} @else if (item.status === 'done') {
+								<span
+									class="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-ok"
+								>
+									<app-icon name="check" class="size-3.5" />
+									{{ t.uploadDone }}
+								</span>
+							}
+						</div>
+
+						@if (item.status === 'uploading') {
+							<div
+								class="mt-2 h-1.5 overflow-hidden rounded-full bg-bg"
+								role="progressbar"
+								aria-valuemin="0"
+								aria-valuemax="100"
+								[attr.aria-valuenow]="item.progress"
+								[attr.aria-label]="item.name"
+							>
+								@if (item.file.size <= 0) {
+									<div class="loadbar h-full bg-accent"></div>
+								} @else {
+									<div
+										class="h-full rounded-full bg-accent"
+										[style.width.%]="item.progress"
+									></div>
+								}
+							</div>
+						}
+
+						@if (item.status === 'conflict') {
+							<div
+								class="mt-3 rounded-2xl bg-accent-soft px-3 py-3 text-sm"
+								role="alert"
+							>
+								<p>
+									{{
+										item.clash === 'queue'
+											? t.uploadNameQueued
+											: t.uploadNameUsed
+									}}
+								</p>
+								<div class="mt-2 flex flex-wrap gap-2">
+									<button
+										type="button"
+										class="btn btn-primary"
+										(click)="replace(item.id)"
+									>
+										{{ t.uploadReplace }}
+									</button>
+									<button
+										type="button"
+										class="btn btn-quiet"
+										(click)="beside(item.id)"
+									>
+										{{ t.uploadBeside }}
+									</button>
+								</div>
+							</div>
+						}
+
+						@if (item.status === 'error') {
+							<div class="mt-3 text-sm text-danger" role="alert">
+								<p>{{ rowError(item) }}</p>
+								@if (item.error !== 'badName' && item.error !== 'demo') {
+									<button
+										type="button"
+										class="btn btn-quiet mt-2"
+										(click)="retry(item.id)"
+									>
+										{{ t.retry }}
+									</button>
+								}
+							</div>
+						}
+					</li>
+				}
+			</ul>
+		}
+
+		@if (busy()) {
+			<p class="mt-4 text-xs text-muted">{{ t.uploadHold }}</p>
+		}
+	</section>
+</div>

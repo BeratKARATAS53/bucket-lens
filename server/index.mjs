@@ -7,7 +7,15 @@ import { KeystoreError } from './keystore.mjs';
 import { RequestError } from './request-error.mjs';
 import { serveStatic } from './static.mjs';
 import { createConnectionStore, defaultConnectionPath, publicStore } from './store.mjs';
-import { headObject, listObjects, openDownload, searchObjects } from './s3.mjs';
+import {
+	headObject,
+	isObjectKey,
+	listObjects,
+	openDownload,
+	presignObject,
+	putObject,
+	searchObjects,
+} from './s3.mjs';
 import { checkForUpdate, lookupGitHubRelease, readAppVersion } from './update.mjs';
 
 export function startServer({
@@ -88,6 +96,54 @@ export function startServer({
 					return;
 				}
 				send(res, 200, await headObject(await requireConnection(store), key));
+				return;
+			}
+			if (req.method === 'PUT' && url.pathname === '/api/objects') {
+				try {
+					const key = url.searchParams.get('key') ?? '';
+					if (!isObjectKey(key)) {
+						throw new HttpError(
+							400,
+							key ? 'InvalidKey' : 'MissingKey',
+							'key is required',
+						);
+					}
+					const contentLength = Number(req.headers['content-length']);
+					if (!Number.isInteger(contentLength) || contentLength < 0) {
+						throw new HttpError(411, 'LengthRequired', 'content-length is required');
+					}
+					await putObject(await requireConnection(store), key, req, {
+						contentType: mediaType(req.headers['content-type']),
+						contentLength,
+						signal: clientSignal(res),
+					});
+					send(res, 200, { key });
+				} catch (error) {
+					req.resume();
+					throw error;
+				}
+				return;
+			}
+			if (req.method === 'GET' && url.pathname === '/api/objects/presign') {
+				const key = url.searchParams.get('key') ?? '';
+				const minutes = Number(url.searchParams.get('minutes'));
+				if (!isObjectKey(key)) {
+					send(res, 400, {
+						code: key ? 'InvalidKey' : 'MissingKey',
+						message: 'key is required',
+					});
+					return;
+				}
+				if (!PRESIGN_MINUTES.has(minutes)) {
+					send(res, 400, { code: 'InvalidDuration', message: 'Duration is not allowed' });
+					return;
+				}
+				const signed = await presignObject(
+					await requireConnection(store),
+					key,
+					minutes * 60,
+				);
+				send(res, 200, { url: signed, expiresIn: minutes * 60 });
 				return;
 			}
 			if (req.method === 'GET' && url.pathname === '/api/objects/download') {
@@ -249,6 +305,15 @@ function clampKeys(value) {
 	const parsed = Number(value);
 	if (!Number.isFinite(parsed)) return 200;
 	return Math.min(1000, Math.max(1, Math.trunc(parsed)));
+}
+
+const PRESIGN_MINUTES = new Set([5, 10, 15, 30, 60, 90, 120]);
+
+function mediaType(value) {
+	if (typeof value !== 'string') return 'application/octet-stream';
+	const type = value.split(';')[0].trim().toLowerCase();
+	if (!/^[a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+$/.test(type)) return 'application/octet-stream';
+	return type;
 }
 
 function attachmentName(name) {

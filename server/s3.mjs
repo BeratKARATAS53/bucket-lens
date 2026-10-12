@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { AwsClient } from 'aws4fetch';
-import { headFtp, listFtp, openFtpDownload } from './ftp.mjs';
+import { headFtp, listFtp, openFtpDownload, putFtp } from './ftp.mjs';
 import { RequestError } from './request-error.mjs';
 
 export class S3RequestError extends RequestError {
@@ -142,13 +142,73 @@ export async function openDownload(connection, key) {
 	return response;
 }
 
+const PRESIGN_SECONDS = new Set([300, 600, 900, 1800, 3600, 5400, 7200]);
+
+export function isObjectKey(value) {
+	if (typeof value !== 'string' || !value || value.length > 1024) return false;
+	if (value.includes('\\') || value.includes('\0')) return false;
+	const parts = value.split('/');
+	return parts.every((part) => part && part !== '.' && part !== '..');
+}
+
+export async function putObject(
+	connection,
+	key,
+	body,
+	{ contentType, contentLength, signal } = {},
+) {
+	if (!isObjectKey(key)) throw new RequestError(400, 'InvalidKey', 'Invalid path');
+	if (connection?.provider === 'ftp') return putFtp(connection, key, body, undefined, signal);
+	const response = await signedRequest(connection, objectPath(key), 'PUT', 'text', signal, {
+		headers: {
+			'content-type': contentType || 'application/octet-stream',
+			'x-amz-content-sha256': 'UNSIGNED-PAYLOAD',
+		},
+		allHeaders: true,
+		body,
+		contentLength,
+	});
+	if (response.status >= 400) throw await errorFromResponse(response);
+	return { key };
+}
+
+export async function presignObject(connection, key, expires) {
+	if (connection?.provider === 'ftp') {
+		throw new RequestError(400, 'PresignUnsupported', 'FTP does not support presigned URLs');
+	}
+	if (!isObjectKey(key)) throw new RequestError(400, 'InvalidKey', 'Invalid path');
+	if (!PRESIGN_SECONDS.has(expires)) {
+		throw new RequestError(400, 'InvalidDuration', 'Duration is not allowed');
+	}
+	const target = new URL(requestUrl(connection, objectPath(key)));
+	target.searchParams.set('X-Amz-Expires', String(expires));
+	const client = new AwsClient({
+		accessKeyId: connection.accessKeyId,
+		secretAccessKey: connection.secretAccessKey,
+		service: 's3',
+		region: connection.region,
+	});
+	const signed = await client.sign(target.toString(), {
+		method: 'GET',
+		aws: { signQuery: true },
+	});
+	return signed.url;
+}
+
 async function requestText(connection, path, signal) {
 	const response = await signedRequest(connection, path, 'GET', 'text', signal);
 	if (response.status >= 400) throw await errorFromResponse(response);
 	return String(response.data);
 }
 
-async function signedRequest(connection, path, method, responseType = 'text', signal) {
+async function signedRequest(
+	connection,
+	path,
+	method,
+	responseType = 'text',
+	signal,
+	options = {},
+) {
 	const url = requestUrl(connection, path);
 	const client = new AwsClient({
 		accessKeyId: connection.accessKeyId,
@@ -159,18 +219,23 @@ async function signedRequest(connection, path, method, responseType = 'text', si
 	});
 	const signed = await client.sign(url, {
 		method,
-		headers: { 'x-amz-content-sha256': 'UNSIGNED-PAYLOAD' },
+		headers: options.headers ?? { 'x-amz-content-sha256': 'UNSIGNED-PAYLOAD' },
+		...(options.allHeaders ? { aws: { allHeaders: true } } : {}),
 	});
 	const headers = {};
 	signed.headers.forEach((value, key) => {
 		headers[key] = value;
 	});
+	if (options.contentLength != null) headers['content-length'] = String(options.contentLength);
 	return axios.request({
 		url: signed.url,
 		method,
 		headers,
+		data: options.body,
 		responseType,
 		signal,
+		maxBodyLength: Infinity,
+		maxContentLength: Infinity,
 		validateStatus: () => true,
 	});
 }

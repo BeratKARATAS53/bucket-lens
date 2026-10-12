@@ -1,6 +1,14 @@
-import { app, BrowserWindow, dialog, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import { join } from 'node:path';
 import { startServer } from '../server/index.mjs';
+
+let downloadLocked = false;
+
+ipcMain.on('download-lock', (event, locked) => {
+	downloadLocked = Boolean(locked);
+	const win = BrowserWindow.fromWebContents(event.sender);
+	if (win && !win.isDestroyed()) win.setClosable(!downloadLocked);
+});
 
 if (!app.requestSingleInstanceLock()) {
 	app.quit();
@@ -32,12 +40,16 @@ if (!app.requestSingleInstanceLock()) {
 				title: 'Bucket Lens',
 				autoHideMenuBar: true,
 				backgroundColor: '#efeae1',
-				icon: join(staticRoot, 'logo.png'),
+				icon: join(staticRoot, 'icon.png'),
 				webPreferences: {
+					preload: join(app.getAppPath(), 'electron', 'preload.cjs'),
 					contextIsolation: true,
 					nodeIntegration: false,
 					sandbox: true,
 				},
+			});
+			mainWindow.on('close', (event) => {
+				if (downloadLocked) event.preventDefault();
 			});
 			mainWindow.webContents.setWindowOpenHandler(({ url }) => {
 				if (isReleasePage(url)) void shell.openExternal(url);
@@ -53,7 +65,11 @@ if (!app.requestSingleInstanceLock()) {
 		}
 	});
 
-	app.on('before-quit', () => {
+	app.on('before-quit', (event) => {
+		if (downloadLocked) {
+			event.preventDefault();
+			return;
+		}
 		server?.close();
 	});
 

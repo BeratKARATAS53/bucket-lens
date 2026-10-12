@@ -16,6 +16,8 @@ export type IconName =
 	| 'sun'
 	| 'moon'
 	| 'download'
+	| 'upload'
+	| 'link'
 	| 'close'
 	| 'refresh'
 	| 'copy'
@@ -47,6 +49,8 @@ const ICONS: Record<IconName, string> = {
 	sun: '<circle cx="12" cy="12" r="3.5"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"/>',
 	moon: '<path d="M20 14.5A7.5 7.5 0 1 1 9.5 4 6 6 0 0 0 20 14.5z"/>',
 	download: '<path d="M12 4v10M8 10l4 4 4-4M5 19h14"/>',
+	upload: '<path d="M12 16V4M8 8l4-4 4 4M5 20h14"/>',
+	link: '<path d="M10 13a5 5 0 0 0 7.1.1l1.4-1.5a5 5 0 0 0-7.1-7.1L10 6"/><path d="M14 11a5 5 0 0 0-7.1-.1L5.5 12.4a5 5 0 0 0 7.1 7.1L14 18"/>',
 	close: '<path d="M6 6l12 12M18 6 6 18"/>',
 	refresh: '<path d="M20 12a8 8 0 1 1-2.2-5.5"/><path d="M20 4v5h-5"/>',
 	copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5h10"/>',

@@ -183,6 +183,15 @@
 					<button
 						type="button"
 						class="btn btn-quiet"
+						(click)="openUpload()"
+						[attr.aria-label]="t.upload"
+					>
+						<app-icon name="upload" class="size-4" />
+						<span class="hidden sm:inline">{{ t.upload }}</span>
+					</button>
+					<button
+						type="button"
+						class="btn btn-quiet"
 						(click)="refresh()"
 						[disabled]="loading()"
 						[attr.aria-label]="t.refresh"
@@ -444,7 +453,7 @@
 											class="hidden text-sm text-muted tabular-nums md:block"
 											>{{
 												entry.kind === 'folder'
-													? '—'
+													? '-'
 													: formatBytes(entry.size, lang)
 											}}</span
 										>
@@ -520,6 +529,85 @@
 	</div>
 </ng-template>
 
+@if (notice.toast(); as item) {
+	<div
+		class="fixed top-20 right-4 z-50 w-[min(22rem,calc(100vw-2rem))] rounded-2xl bg-raised p-3 text-ink shadow-2xl ring-1 ring-line"
+		role="status"
+		aria-live="polite"
+	>
+		<div class="flex items-start gap-3">
+			<span
+				class="grid size-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent"
+			>
+				<app-icon
+					[name]="
+						item.phase === 'done'
+							? 'check'
+							: item.phase === 'error'
+								? 'alert'
+								: 'download'
+					"
+					class="size-5"
+				/>
+			</span>
+			<div class="min-w-0 flex-1">
+				<p class="truncate text-sm font-medium">{{ item.name }}</p>
+				<p class="mt-0.5 text-xs text-muted">
+					@if (item.phase === 'active') {
+						{{ formatBytes(item.loaded, lang) }} / {{ formatBytes(item.total, lang) }}
+					} @else if (item.phase === 'done') {
+						{{ t.downloadDone }}
+					} @else {
+						{{ messageForError(item.error ?? 'generic', t) }}
+					}
+				</p>
+				<div
+					class="mt-2 h-1.5 overflow-hidden rounded-full bg-sunken"
+					role="progressbar"
+					aria-valuemin="0"
+					aria-valuemax="100"
+					[attr.aria-valuenow]="downloadPercent(item)"
+					[attr.aria-label]="item.name"
+				>
+					@if (item.phase === 'active' && item.total <= 0) {
+						<div class="loadbar h-full bg-accent"></div>
+					} @else {
+						<div
+							class="h-full rounded-full"
+							[class.bg-accent]="item.phase === 'active'"
+							[class.bg-ok]="item.phase === 'done'"
+							[class.bg-danger]="item.phase === 'error'"
+							[style.width.%]="item.phase === 'error' ? 100 : downloadPercent(item)"
+						></div>
+					}
+				</div>
+				@if (item.phase === 'active') {
+					<p class="mt-2 text-xs text-muted">{{ t.downloadHold }}</p>
+				}
+			</div>
+		</div>
+	</div>
+}
+@if (dragging() && !uploadOpen()) {
+	<div
+		class="pointer-events-none fixed inset-4 z-50 grid place-items-center rounded-[1.75rem] border-2 border-dashed border-accent bg-bg/85 text-center"
+	>
+		<div>
+			<p class="text-4xl font-semibold">{{ t.uploadOverlay }}</p>
+			<p class="mt-2 text-sm text-muted">{{ t.uploadOverlayHint }}</p>
+		</div>
+	</div>
+}
+@if (uploadOpen()) {
+	<app-upload-dialog
+		[prefix]="prefix()"
+		[batch]="uploadBatch()"
+		[files]="uploadFiles()"
+		[dropping]="dragging()"
+		(closed)="uploadOpen.set(false)"
+		(uploaded)="onUploaded()"
+	/>
+}
 @if (settingsOpen() && !demo) {
 	<app-settings-dialog (closed)="settingsOpen.set(false)" />
 }

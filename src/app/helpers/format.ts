@@ -87,7 +87,7 @@ export function messageForError(kind: S3ErrorKind, t: Dictionary): string {
 }
 
 export function formatBytes(bytes: number | null, lang: Lang): string {
-	if (bytes == null || Number.isNaN(bytes)) return '—';
+	if (bytes == null || Number.isNaN(bytes)) return '-';
 	const units = ['B', 'KB', 'MB', 'GB', 'TB'];
 	let value = bytes;
 	let unit = 0;
@@ -104,7 +104,7 @@ export function formatBytes(bytes: number | null, lang: Lang): string {
 }
 
 export function formatExact(bytes: number | null, lang: Lang): string {
-	if (bytes == null || Number.isNaN(bytes)) return '—';
+	if (bytes == null || Number.isNaN(bytes)) return '-';
 	const formatted = new Intl.NumberFormat(locale(lang)).format(bytes);
 	return lang === 'tr' ? `${formatted} bayt` : `${formatted} bytes`;
 }
@@ -121,9 +121,9 @@ export function formatScanned(count: number, lang: Lang): string {
 }
 
 export function formatDate(value: string | null, lang: Lang, style: 'short' | 'full'): string {
-	if (!value) return '—';
+	if (!value) return '-';
 	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return '—';
+	if (Number.isNaN(date.getTime())) return '-';
 	return new Intl.DateTimeFormat(
 		locale(lang),
 		style === 'short'

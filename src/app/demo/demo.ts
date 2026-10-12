@@ -81,6 +81,10 @@ export class DemoBucketService extends BucketService {
 	override async download(): Promise<void> {
 		return Promise.resolve();
 	}
+
+	override async exists(key: string): Promise<boolean> {
+		return files.some((item) => item.key === key);
+	}
 }
 
 function children(prefix: string): BucketEntry[] {

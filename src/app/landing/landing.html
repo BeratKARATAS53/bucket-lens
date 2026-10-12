@@ -1,5 +1,4 @@
 @let t = i18n.t();
-@let lang = i18n.lang();
 
 <div class="relative flex min-h-dvh flex-col">
 	<div class="pointer-events-none fixed inset-0 -z-10">
@@ -51,9 +50,9 @@
 			>
 				<img
 					class="w-full origin-center rounded-2xl shadow-xl ring-1 ring-line transition duration-200 ease-out group-hover:scale-105 group-hover:shadow-[0_28px_70px_rgb(40_28_16/0.28)] dark:group-hover:shadow-[0_28px_70px_rgb(0_0_0/0.55)]"
-					[src]="lang === 'tr' ? 'preview-tr.png' : 'preview-en.png'"
-					width="1212"
-					height="906"
+					[src]="preview()"
+					width="1186"
+					height="649"
 					alt=""
 				/>
 			</a>

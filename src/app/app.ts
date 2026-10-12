@@ -30,8 +30,10 @@ import { BucketEntry, KindFilter, S3Failure, SortKey } from './models/bucket';
 import { DetailDialog } from './components/detail-dialog';
 import { Icon, iconForEntry } from './components/icon';
 import { SettingsDialog } from './components/settings-dialog';
+import { UploadDialog } from './components/upload-dialog';
 import { api } from './services/api';
 import { BucketService } from './services/bucket.service';
+import { DownloadNotice, downloadPercent } from './services/download-notice';
 import { ConnectionService } from './services/connection.service';
 import { I18nService } from './services/i18n.service';
 import { ThemeService } from './services/theme.service';
@@ -39,7 +41,7 @@ import { DEMO_MODE } from './demo/demo';
 
 @Component({
 	selector: 'app-browser',
-	imports: [NgTemplateOutlet, Icon, SettingsDialog, DetailDialog],
+	imports: [NgTemplateOutlet, Icon, SettingsDialog, DetailDialog, UploadDialog],
 	templateUrl: './app.html',
 	styleUrl: './app.css',
 })
@@ -58,6 +60,8 @@ export class App {
 	protected readonly formatScanned = formatScanned;
 	protected readonly kindLabel = kindLabel;
 	protected readonly messageForError = messageForError;
+	protected readonly downloadPercent = downloadPercent;
+	protected readonly notice = inject(DownloadNotice);
 	protected readonly skeletons = [46, 32, 58, 40, 28, 52, 36, 44];
 	protected readonly filters = [
 		['all', 'filterAll'],
@@ -71,6 +75,10 @@ export class App {
 	] as const;
 
 	protected readonly settingsOpen = signal(false);
+	protected readonly uploadOpen = signal(false);
+	protected readonly uploadBatch = signal(0);
+	protected readonly uploadFiles = signal<File[]>([]);
+	protected readonly dragging = signal(false);
 	protected readonly selected = signal<BucketEntry | null>(null);
 	protected readonly prefix = signal('');
 	protected readonly query = signal('');
@@ -135,6 +143,7 @@ export class App {
 	private generation = 0;
 	private listAbort: AbortController | null = null;
 	private queryTimer: ReturnType<typeof setTimeout> | null = null;
+	private uploadRefresh: ReturnType<typeof setTimeout> | null = null;
 	private activeConnectionId: string | null | undefined = undefined;
 
 	constructor() {
@@ -145,7 +154,8 @@ export class App {
 		void this.store.load();
 		if (!this.demo) void this.lookForUpdate();
 		effect(() => {
-			document.body.style.overflow = this.settingsOpen() || this.selected() ? 'hidden' : '';
+			const locked = this.settingsOpen() || this.selected() || this.uploadOpen();
+			document.body.style.overflow = locked ? 'hidden' : '';
 		});
 		effect(() => {
 			const id = this.store.config()?.id ?? null;
@@ -158,6 +168,8 @@ export class App {
 				this.appliedQuery.set('');
 				this.includeSubfolders.set(false);
 				this.kind.set('all');
+				this.uploadOpen.set(false);
+				this.dragging.set(false);
 			});
 		});
 		effect(() => {
@@ -174,6 +186,7 @@ export class App {
 		inject(DestroyRef).onDestroy(() => {
 			document.body.style.overflow = '';
 			if (this.queryTimer) clearTimeout(this.queryTimer);
+			if (this.uploadRefresh) clearTimeout(this.uploadRefresh);
 			this.listAbort?.abort();
 		});
 	}
@@ -181,7 +194,7 @@ export class App {
 	@HostListener('document:keydown', ['$event'])
 	protected onKeydown(event: KeyboardEvent): void {
 		if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) return;
-		if (this.settingsOpen() || this.selected()) return;
+		if (this.settingsOpen() || this.selected() || this.uploadOpen()) return;
 		const target = event.target;
 		if (
 			target instanceof HTMLInputElement ||
@@ -300,6 +313,49 @@ export class App {
 		void this.reload(true);
 	}
 
+	protected openUpload(): void {
+		this.queueUpload([]);
+	}
+
+	protected onUploaded(): void {
+		if (this.uploadRefresh) clearTimeout(this.uploadRefresh);
+		this.uploadRefresh = setTimeout(() => {
+			this.uploadRefresh = null;
+			void this.reload(true);
+		}, 400);
+	}
+
+	@HostListener('document:dragover', ['$event'])
+	protected onWindowDragOver(event: DragEvent): void {
+		if (!this.hasFiles(event)) return;
+		event.preventDefault();
+		if (event.dataTransfer) event.dataTransfer.dropEffect = this.canUpload() ? 'copy' : 'none';
+		this.dragging.set(this.canUpload());
+	}
+
+	@HostListener('document:dragleave', ['$event'])
+	protected onWindowDragLeave(event: DragEvent): void {
+		if (event.relatedTarget instanceof Node) return;
+		this.dragging.set(false);
+	}
+
+	@HostListener('document:dragend')
+	protected onWindowDragEnd(): void {
+		this.dragging.set(false);
+	}
+
+	@HostListener('document:drop', ['$event'])
+	protected onWindowDrop(event: DragEvent): void {
+		if (!this.hasFiles(event)) return;
+		event.preventDefault();
+		this.dragging.set(false);
+		if (!this.canUpload()) return;
+		const files = [...(event.dataTransfer?.files ?? [])];
+		if (!files.length) return;
+		this.selected.set(null);
+		this.queueUpload(files);
+	}
+
 	protected loadMore(): void {
 		if (this.filtering()) {
 			this.shown.update((count) => count + 200);
@@ -307,6 +363,21 @@ export class App {
 		}
 		if (!this.token() || this.loading() || this.loadingMore()) return;
 		void this.reload(false);
+	}
+
+	private canUpload(): boolean {
+		return this.store.ready() && Boolean(this.store.config()) && !this.settingsOpen();
+	}
+
+	private hasFiles(event: DragEvent): boolean {
+		const types = event.dataTransfer?.types;
+		return Boolean(types && Array.from(types).includes('Files'));
+	}
+
+	private queueUpload(files: File[]): void {
+		this.uploadFiles.set(files);
+		this.uploadBatch.update((value) => value + 1);
+		this.uploadOpen.set(true);
 	}
 
 	private async reload(reset: boolean): Promise<void> {

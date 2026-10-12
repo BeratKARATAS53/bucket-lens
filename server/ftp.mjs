@@ -107,6 +107,24 @@ export async function headFtp(connection, key, connect = connectFtp) {
 	});
 }
 
+export async function putFtp(connection, key, body, connect = connectFtp, signal) {
+	const relative = sanitizeRelative(key);
+	if (!relative) throw new RequestError(400, 'InvalidKey', 'Invalid path');
+	if (signal?.aborted) throw canceled();
+	const client = await connect(connection);
+	const onAbort = () => client.close();
+	signal?.addEventListener('abort', onAbort, { once: true });
+	try {
+		await client.uploadFrom(body, ftpJoin(connection.bucket, relative));
+	} catch (error) {
+		if (signal?.aborted) throw canceled();
+		throw error instanceof RequestError ? error : ftpError(error);
+	} finally {
+		signal?.removeEventListener('abort', onAbort);
+		client.close();
+	}
+}
+
 export async function openFtpDownload(connection, key, connect = connectFtp) {
 	const relative = sanitizeRelative(key);
 	if (!relative) throw new RequestError(404, 'NoSuchKey', 'FTP path was not found');

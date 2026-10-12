@@ -1,8 +1,9 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Icon } from '../components/icon';
 import { Dictionary } from '../helpers/i18n';
 import { I18nService } from '../services/i18n.service';
+import { ThemeService } from '../services/theme.service';
 import { SiteFooter } from '../site/footer';
 import { SiteHeader } from '../site/header';
 
@@ -38,6 +39,10 @@ const downloads: { id: DownloadId; platform: Platform; href: string }[] = [
 })
 export class Landing {
 	protected readonly i18n = inject(I18nService);
+	private readonly theme = inject(ThemeService);
+	protected readonly preview = computed(
+		() => `preview-${this.i18n.lang()}-${this.theme.mode()}.png`,
+	);
 	protected readonly releases = 'https://github.com/BeratKARATAS53/BucketLens/releases';
 	protected readonly platform = detectPlatform();
 	protected readonly downloads = [...downloads].sort(

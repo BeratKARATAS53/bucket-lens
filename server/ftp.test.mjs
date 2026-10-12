@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
+import { Readable } from 'node:stream';
 import { test } from 'node:test';
-import { ftpJoin, ftpPort, listFtp, normalizeFtpHost, normalizeFtpRoot } from './ftp.mjs';
+import { ftpJoin, ftpPort, listFtp, normalizeFtpHost, normalizeFtpRoot, putFtp } from './ftp.mjs';
 
 test('ftp host, port, and folder are normalized', () => {
 	assert.equal(normalizeFtpHost('ftp://files.example.com/public'), 'files.example.com');
@@ -59,6 +60,32 @@ test('a deep ftp listing walks folders and can resume', async () => {
 	);
 	assert.equal(third.entries[0].relative, 'docs/b.txt');
 	assert.equal(third.nextToken, null);
+});
+
+test('ftp upload writes the stream at the joined path', async () => {
+	let remote = '';
+	let text = '';
+	await putFtp(connection(), 'docs/a.txt', Readable.from(['hello']), async () => ({
+		async uploadFrom(source, path) {
+			remote = path;
+			const chunks = [];
+			for await (const chunk of source) chunks.push(Buffer.from(chunk));
+			text = Buffer.concat(chunks).toString('utf8');
+		},
+		close() {},
+	}));
+	assert.equal(remote, 'docs/a.txt');
+	assert.equal(text, 'hello');
+});
+
+test('ftp upload rejects a path that leaves the folder', async () => {
+	await assert.rejects(
+		() =>
+			putFtp(connection(), '../secret.txt', Readable.from(['x']), async () => {
+				throw new Error('should not connect');
+			}),
+		(error) => error.code === 'InvalidKey',
+	);
 });
 
 test('a path that leaves the ftp folder is rejected', async () => {

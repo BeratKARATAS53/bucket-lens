@@ -1,7 +1,7 @@
 {
 	"name": "bucket-lens",
 	"version": "0.1.0",
-	"description": "Browse Backblaze B2, Wasabi, and Amazon S3 buckets on your own computer.",
+	"description": "Browse Backblaze B2, Wasabi, Amazon S3, and FTP on your own computer.",
 	"main": "electron/main.mjs",
 	"author": {
 		"name": "D. Berat KARATAŞ",
@@ -79,16 +79,29 @@
 			"**/*.node"
 		],
 		"linux": {
-			"icon": "public/logo.png",
+			"icon": "build/icons",
 			"category": "Utility",
 			"syncDesktopName": true,
+			"desktop": {
+				"entry": {
+					"StartupWMClass": "bucket-lens"
+				}
+			},
+			"extraFiles": [
+				{
+					"from": "build/icons/256x256.png",
+					"to": "icon.png"
+				}
+			],
 			"target": [
 				"deb",
 				"AppImage"
 			]
 		},
 		"deb": {
-			"artifactName": "bucket-lens-linux-amd64.${ext}"
+			"artifactName": "bucket-lens-linux-amd64.${ext}",
+			"afterInstall": "build/linux/after-install.sh",
+			"afterRemove": "build/linux/after-remove.sh"
 		},
 		"appImage": {
 			"artifactName": "bucket-lens-linux-x64.${ext}"

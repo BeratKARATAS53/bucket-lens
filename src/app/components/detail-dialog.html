@@ -47,7 +47,30 @@
 		<h2 id="detail-title" class="mt-5 text-3xl leading-tight font-semibold break-words">
 			{{ file.name }}
 		</h2>
-		<p class="mt-2 font-mono text-xs leading-5 break-all text-muted">{{ address() }}</p>
+		<div class="mt-2 flex items-start gap-1.5">
+			<p
+				class="min-w-0 font-mono text-xs leading-5 break-all transition-colors"
+				[class.text-muted]="!copied() && !copyFailed()"
+				[class.text-ok]="copied()"
+				[class.text-danger]="copyFailed()"
+			>
+				{{ address() }}
+			</p>
+			<button
+				type="button"
+				class="focus-ring grid size-5 shrink-0 place-items-center rounded-full transition-colors"
+				[class.text-muted]="!copied() && !copyFailed()"
+				[class.text-ok]="copied()"
+				[class.text-danger]="copyFailed()"
+				(click)="copyPath()"
+				[attr.aria-label]="copied() ? t.copied : copyFailed() ? t.copyFailed : t.copyPath"
+			>
+				<app-icon name="copy" class="size-4" />
+			</button>
+		</div>
+		<p class="sr-only" aria-live="polite">
+			{{ copied() ? t.copied : copyFailed() ? t.copyFailed : '' }}
+		</p>
 
 		<dl class="mt-5 grid grid-cols-2 gap-3">
 			<div class="rounded-2xl bg-sunken px-3 py-3">
@@ -90,22 +113,89 @@
 			</p>
 		}
 
-		<div class="mt-5 flex flex-wrap gap-2">
-			@if (!demo) {
-				<button
-					type="button"
-					class="btn btn-primary"
-					(click)="download()"
-					[disabled]="downloading()"
-				>
-					<app-icon name="download" class="size-4" />
-					{{ downloading() ? t.preparing : t.download }}
-				</button>
+		<div #presignRoot class="mt-5">
+			<div class="flex flex-wrap gap-2">
+				@if (!demo) {
+					<button
+						type="button"
+						class="btn btn-primary"
+						(click)="download()"
+						[disabled]="downloadBusy()"
+					>
+						<app-icon name="download" class="size-4" />
+						{{ downloadBusy() ? t.preparing : t.download }}
+					</button>
+				}
+				@if (!isFtp()) {
+					<button type="button" class="btn btn-quiet" (click)="togglePresign()">
+						<app-icon name="link" class="size-4" />
+						{{ t.presign }}
+					</button>
+				}
+			</div>
+			@if (!isFtp() && presignOpen()) {
+				<form class="rise mt-3 rounded-2xl bg-sunken p-3" (submit)="createPresign($event)">
+					<p class="text-sm font-semibold">{{ t.presign }}</p>
+					<p class="mt-1 text-xs leading-5 text-muted">{{ t.presignLead }}</p>
+					<div
+						class="mt-3 flex flex-wrap gap-1.5"
+						role="group"
+						[attr.aria-label]="t.presign"
+					>
+						@for (minutes of durations; track minutes) {
+							<button
+								type="button"
+								class="chip"
+								[class.chip-on]="presignFor() === minutes"
+								[attr.aria-pressed]="presignFor() === minutes"
+								(click)="pickDuration(minutes)"
+							>
+								{{ minutes }} {{ t.minuteShort }}
+							</button>
+						}
+					</div>
+					<button type="submit" class="btn btn-primary mt-3" [disabled]="presigning()">
+						{{ presigning() ? t.preparing : t.presignCreate }}
+					</button>
+							@if (presignDemo()) {
+								<p class="mt-3 text-sm text-muted" role="status">{{ t.presignDemo }}</p>
+							}
+							@if (presignError(); as failure) {
+						<p class="mt-3 text-sm text-danger" role="alert">
+							{{ messageForError(failure, t) }}
+						</p>
+					}
+					@if (presignUrl(); as url) {
+						<p class="mt-3 text-xs text-muted">{{ presignReady() }}</p>
+						<div class="mt-2 flex items-start gap-1.5">
+							<p
+								class="min-w-0 flex-1 font-mono text-xs leading-5 break-all transition-colors"
+								[class.text-ok]="presignCopied()"
+								[class.text-danger]="presignFailed()"
+							>
+								{{ url }}
+							</p>
+							<button
+								type="button"
+								class="focus-ring grid size-8 shrink-0 place-items-center rounded-full transition-colors"
+								[class.text-muted]="!presignCopied() && !presignFailed()"
+								[class.text-ok]="presignCopied()"
+								[class.text-danger]="presignFailed()"
+								(click)="copyPresign()"
+								[attr.aria-label]="
+									presignCopied()
+										? t.copied
+										: presignFailed()
+											? t.copyFailed
+											: t.copyPath
+								"
+							>
+								<app-icon name="copy" class="size-4" />
+							</button>
+						</div>
+					}
+				</form>
 			}
-			<button type="button" class="btn btn-quiet" (click)="copyPath()">
-				<app-icon [name]="copied() ? 'check' : 'copy'" class="size-4" />
-				{{ copied() ? t.copied : copyFailed() ? t.copyFailed : t.copyPath }}
-			</button>
 		</div>
 	</section>
 </div>
