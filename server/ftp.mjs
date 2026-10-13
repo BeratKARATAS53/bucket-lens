@@ -1,4 +1,4 @@
-import { PassThrough } from 'node:stream';
+import { PassThrough, Readable } from 'node:stream';
 import { Client } from 'basic-ftp';
 import { RequestError } from './request-error.mjs';
 
@@ -37,6 +37,7 @@ const MIME = {
 export function ftpPort(value) {
 	const port = Number(String(value ?? '').trim());
 	if (!Number.isInteger(port) || port < 1 || port > 65535) return null;
+
 	return port;
 }
 
@@ -57,8 +58,10 @@ export function normalizeFtpRoot(value) {
 		.trim()
 		.replace(/\\/g, '/');
 	if (!raw || raw === '/') return '/';
+
 	const parts = raw.split('/');
 	if (parts.some((part) => part === '.' || part === '..')) return null;
+
 	const kept = parts.filter(Boolean);
 	return kept.length ? kept.join('/') : '/';
 }
@@ -83,6 +86,7 @@ export async function listFtp(
 	const limit = clamp(maxKeys);
 	return useClient(connection, signal, connect, async (client) => {
 		if (delimited) return listOne(client, connection, dir, token, limit);
+
 		return walk(client, connection, dir, token, limit, signal);
 	});
 }
@@ -115,7 +119,7 @@ export async function putFtp(connection, key, body, connect = connectFtp, signal
 	const onAbort = () => client.close();
 	signal?.addEventListener('abort', onAbort, { once: true });
 	try {
-		await client.uploadFrom(body, ftpJoin(connection.bucket, relative));
+		await client.uploadFrom(asReadable(body), ftpJoin(connection.bucket, relative));
 	} catch (error) {
 		if (signal?.aborted) throw canceled();
 		throw error instanceof RequestError ? error : ftpError(error);
@@ -123,6 +127,41 @@ export async function putFtp(connection, key, body, connect = connectFtp, signal
 		signal?.removeEventListener('abort', onAbort);
 		client.close();
 	}
+}
+
+export async function removeFtp(connection, key, connect = connectFtp) {
+	const relative = sanitizeRelative(key);
+	if (!relative) throw new RequestError(400, 'InvalidKey', 'Invalid path');
+	return useClient(connection, undefined, connect, async (client) => {
+		await client.remove(ftpJoin(connection.bucket, relative));
+	});
+}
+
+export async function probeFtpRead(connection, key, connect = connectFtp) {
+	const relative = sanitizeRelative(key);
+	if (!relative) throw new RequestError(403, 'AccessDenied', 'FTP read was denied');
+	return useClient(connection, undefined, connect, async (client) => {
+		const remote = ftpJoin(connection.bucket, relative);
+		try {
+			await client.size(remote);
+			return;
+		} catch (error) {
+			if (error?.code === 530) {
+				throw new RequestError(403, 'AccessDenied', 'FTP read was denied');
+			}
+			if (
+				error?.code === 500 ||
+				error?.code === 502 ||
+				error?.code === 550 ||
+				error?.code === 553
+			) {
+				await readOneByte(client, remote);
+				return;
+			}
+
+			throw error instanceof RequestError ? error : ftpError(error);
+		}
+	});
 }
 
 export async function openFtpDownload(connection, key, connect = connectFtp) {
@@ -276,16 +315,21 @@ function encodeToken(state) {
 
 function decodeToken(token) {
 	if (!token) return null;
+
 	try {
 		const parsed = JSON.parse(Buffer.from(token, 'base64url').toString('utf8'));
 		if (!parsed || !Array.isArray(parsed.queue) || !parsed.queue.length) return null;
+
 		const offset = parsed.offset;
 		if (!Number.isInteger(offset) || offset < 0 || offset > 100000) return null;
+
 		const queue = [];
 		for (const dir of parsed.queue) {
 			if (typeof dir !== 'string') return null;
+
 			const clean = asDirPrefix(dir);
 			if (clean == null) return null;
+
 			queue.push(clean);
 		}
 		return { queue, offset };
@@ -297,6 +341,7 @@ function decodeToken(token) {
 function asDirPrefix(prefix) {
 	const clean = sanitizeRelative(prefix);
 	if (clean == null) return null;
+
 	return clean ? `${clean}/` : '';
 }
 
@@ -305,14 +350,17 @@ function sanitizeRelative(value) {
 		.replace(/\\/g, '/')
 		.split('/');
 	if (parts.some((part) => part === '.' || part === '..')) return null;
+
 	return parts.filter(Boolean).join('/');
 }
 
 function safeName(name) {
 	if (typeof name !== 'string') return null;
+
 	const trimmed = name.trim();
 	if (!trimmed || trimmed === '.' || trimmed === '..') return null;
 	if (trimmed.includes('/') || trimmed.includes('\\') || trimmed.includes('\0')) return null;
+
 	return trimmed;
 }
 
@@ -332,6 +380,39 @@ function nameOf(relative) {
 	return parts.at(-1) || relative;
 }
 
+function asReadable(body) {
+	if (body && typeof body.pipe === 'function') return body;
+	if (Buffer.isBuffer(body)) return Readable.from([body]);
+
+	return Readable.from([]);
+}
+
+async function readOneByte(client, remote) {
+	const stream = new PassThrough();
+	let sawData = false;
+	stream.on('error', () => {});
+	stream.on('data', () => {
+		sawData = true;
+		stream.destroy();
+	});
+	try {
+		await client.downloadTo(stream, remote);
+	} catch (error) {
+		if (!stream.destroyed) stream.destroy();
+		if (sawData) return;
+
+		throw ftpReadDenied(error);
+	}
+}
+
+function ftpReadDenied(error) {
+	if (error?.code === 530 || error?.code === 550 || error?.code === 553) {
+		return new RequestError(403, 'AccessDenied', 'FTP read was denied');
+	}
+
+	return error instanceof RequestError ? error : ftpError(error);
+}
+
 function contentTypeFor(name) {
 	const base = name.split('/').pop() ?? name;
 	const dot = base.lastIndexOf('.');
@@ -342,6 +423,7 @@ function contentTypeFor(name) {
 function clamp(value) {
 	const parsed = Number(value);
 	if (!Number.isFinite(parsed)) return 200;
+
 	return Math.min(1000, Math.max(1, Math.trunc(parsed)));
 }
 
@@ -354,6 +436,7 @@ function canceled() {
 
 function ftpError(error) {
 	if (error instanceof RequestError) return error;
+
 	const code = error?.code;
 	if (code === 530) return new RequestError(401, 'AccessDenied', 'FTP login was rejected');
 	if (code === 550 || code === 553)
@@ -375,6 +458,7 @@ function ftpError(error) {
 	) {
 		return new RequestError(502, 'FtpTls', 'FTP TLS certificate was rejected');
 	}
+
 	const message =
 		typeof error?.message === 'string' ? error.message.slice(0, 300) : 'FTP request failed';
 	return new RequestError(502, typeof code === 'number' ? `Ftp${code}` : 'FtpError', message);

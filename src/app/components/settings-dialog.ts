@@ -112,6 +112,7 @@ export class SettingsDialog {
 			this.back();
 			return;
 		}
+
 		this.closed.emit();
 	}
 
@@ -120,11 +121,13 @@ export class SettingsDialog {
 		t: Dictionary,
 	): string | null {
 		if (!this.submitted()) return null;
+
 		const code = this.errors()[field];
 		if (code === 'bucket') return t.validationBucket;
 		if (code === 'host') return t.validationHost;
 		if (code === 'port') return t.validationPort;
 		if (code === 'required') return t.validationRequired;
+
 		return null;
 	}
 
@@ -174,6 +177,7 @@ export class SettingsDialog {
 	protected async choose(item: ConnectionView): Promise<void> {
 		this.confirmDeleteId.set(null);
 		if (this.saving() || this.store.config()?.id === item.id) return;
+
 		this.saving.set(true);
 		this.formError.set(null);
 		try {
@@ -192,11 +196,13 @@ export class SettingsDialog {
 			this.confirmDeleteId.set(item.id);
 			return;
 		}
+
 		this.saving.set(true);
 		this.formError.set(null);
 		try {
 			await this.store.remove(item.id);
 			if (!this.alive) return;
+
 			this.confirmDeleteId.set(null);
 			if (!this.store.connections().length) this.openCreate();
 		} catch (error) {
@@ -224,6 +230,7 @@ export class SettingsDialog {
 			});
 			return;
 		}
+
 		const region = defaultRegion(provider);
 		const fromFtp = draft.provider === 'ftp';
 		this.patch({
@@ -268,6 +275,7 @@ export class SettingsDialog {
 			this.patch({ accessKeyId });
 			return;
 		}
+
 		const region = regionById(draft.provider, guess);
 		this.patch({
 			accessKeyId,
@@ -284,6 +292,7 @@ export class SettingsDialog {
 	protected applySuggestion(): void {
 		const guess = this.suggestion();
 		if (!guess) return;
+
 		this.regionLocked.set(true);
 		const region = regionById(this.draft().provider, guess);
 		const draft = this.draft();
@@ -299,13 +308,16 @@ export class SettingsDialog {
 		this.submitted.set(true);
 		this.formError.set(null);
 		if (!this.valid() || this.saving()) return;
+
 		this.saving.set(true);
 		try {
 			await this.store.save({ ...this.draft(), id: this.editing()?.id });
 			if (!this.alive) return;
+
 			this.closed.emit();
 		} catch (error) {
 			if (!this.alive) return;
+
 			this.formError.set(classifyS3Error(error));
 		} finally {
 			if (this.alive) this.saving.set(false);

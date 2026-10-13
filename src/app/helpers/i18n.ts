@@ -80,12 +80,35 @@ const tr = {
 	noMatches: 'Bu süzgeçte bir şey yok',
 	up: 'Üst klasör',
 	download: 'İndir',
+	downloadDemo: 'Demoda dosya indirilmez.',
 	preparing: 'Hazırlanıyor',
 	downloadDone: 'İndirildi',
 	downloadHold: 'İndirme bitene kadar pencere açık kalır.',
 	copyPath: 'Yolu kopyala',
 	copied: 'Kopyalandı',
 	copyFailed: 'Kopyalanamadı',
+	copyTo: 'Başka sunucuya kopyala',
+	copyLead:
+		'Dosya, seçtiğin sunucuya kopyalanır. Kaynakta okuma, hedefte yazma izni aranır. Üst sınır 1 GB.',
+	copyServer: 'Hedef sunucu',
+	copyTargetPath: 'Hedef yol',
+	copyStart: 'Kopyala',
+	copying: 'Kopyalanıyor',
+	copyDone: 'Kopyalandı',
+	copyTooLarge: '1 GB üstü kopyalanmaz.',
+	copyUnknownSize: 'Boyut bilinmiyor. Kopyalama başlamadı.',
+	copySourceDenied: 'Kaynak sunucuda okuma izni yok.',
+	copyDestinationDenied: 'Hedef sunucuda yazma izni yok.',
+	copyExists: 'Hedefte bu yol dolu.',
+	copyReplace: 'Üzerine yaz',
+	copySame: 'Açık olan sunucu hedef olamaz.',
+	copyBusy: 'Başka bir kopyalama sürüyor.',
+	copyHold: 'Kopyalama bitene kadar pencere açık kalır.',
+	copyDemo: 'Demoda dosya kopyalanmaz.',
+	copyNeedServer: 'Önce başka bir sunucu ekle.',
+	copyCanceled: 'Kopyalama durduruldu.',
+	copyRemote: 'Sunucuda kopyalanıyor',
+	copyBadPath: 'Bu yol kullanılamaz.',
 	presign: 'Süreli bağlantı',
 	presignLead: 'Bağlantı, seçilen süre dolunca çalışmaz.',
 	presignCreate: 'Oluştur',
@@ -169,13 +192,12 @@ const tr = {
 		'Uygulamayı indirip kur. Anahtarı kaydet, kova adını yaz. Klasörler açılır. Dosyayı bulup indirebilir, açık klasöre yeni dosya yükleyebilirsin. Kurmadan önce listedeki görüntüye tıklayıp örneğe bakabilirsin.',
 	faqActions: 'Hangi işlemleri yapabilirim?',
 	faqActionsList:
-		'Dosyaları listeleyip indirebilirsin. Büyük dosyada sağ üstte ilerleme görünür ve bitene kadar pencere açık kalır.',
+		'Dosyaları listeleyip indirebilirsin. Büyük dosyada sağ üstte ilerleme görünür ve bitene kadar pencere açık kalır. Kayıtlı sunucular arasında 1 GB’a kadar dosya kopyalanabilir.',
 	faqActionsUpload:
 		'Açık klasöre dosya yükleyebilirsin. Pencereye ya da doğrudan listeye bırakman yeter.',
 	faqActionsConflict:
 		'Aynı ad varsa uyarı çıkar. Mevcut dosyayı güncelleyebilir ya da yenisini yanına ekleyebilirsin.',
-	faqActionsLink:
-		'S3 kovalarında süreli bağlantı oluşturulabilir. FTP’de bu bağlantı yoktur.',
+	faqActionsLink: 'S3 kovalarında süreli bağlantı oluşturulabilir. FTP’de bu bağlantı yoktur.',
 	faqActionsDelete: 'Silme sonra gelecek.',
 	faqSystems: 'Hangi sistemler destekleniyor?',
 	faqSystemsA:
@@ -191,7 +213,7 @@ const tr = {
 		'Anahtar bu bilgisayarda kalır. Listeleme ve okuma yeter. Dosya yüklemek için yazma izni de gerekir. Linux’ta kaydın durması için GNOME Keyring veya KWallet açık olmalı.',
 	faqDemo: 'Demoda kendi kovama bakabilir miyim?',
 	faqDemoA:
-		'Demo örnek bir listedir. Yükleme ve süreli bağlantı orada çalışmaz. Kendi kovan için uygulamayı kurup anahtarı orada kaydedersin.',
+		'Demo örnek bir listedir. İndirme, yükleme, kopyalama ve süreli bağlantı orada çalışmaz. Kendi kovan için uygulamayı kurup anahtarı orada kaydedersin.',
 	footerBy: '{name} tarafından geliştirildi',
 	footerRights: '© 2026 tüm hakları saklıdır',
 	footerLegal: 'Yasal belgeler',
@@ -283,12 +305,35 @@ const en: { [K in keyof typeof tr]: string } = {
 	noMatches: 'Nothing matches this filter',
 	up: 'Up',
 	download: 'Download',
+	downloadDemo: 'Files cannot be downloaded in the demo.',
 	preparing: 'Preparing',
 	downloadDone: 'Downloaded',
 	downloadHold: 'The window stays open until the download finishes.',
 	copyPath: 'Copy path',
 	copied: 'Copied',
 	copyFailed: 'Could not copy',
+	copyTo: 'Copy to another server',
+	copyLead:
+		'The file is copied to the server you pick. Reading is required on the source, and writing on the destination. The limit is 1 GB.',
+	copyServer: 'Destination server',
+	copyTargetPath: 'Destination path',
+	copyStart: 'Copy',
+	copying: 'Copying',
+	copyDone: 'Copied',
+	copyTooLarge: 'Files over 1 GB are not copied.',
+	copyUnknownSize: 'The size is unknown, so the copy did not start.',
+	copySourceDenied: 'The source server did not allow reading.',
+	copyDestinationDenied: 'The destination server did not allow writing.',
+	copyExists: 'That path is already used on the destination.',
+	copyReplace: 'Overwrite',
+	copySame: 'The open server cannot be the destination.',
+	copyBusy: 'Another copy is already running.',
+	copyHold: 'The window stays open until the copy finishes.',
+	copyDemo: 'Files cannot be copied in the demo.',
+	copyNeedServer: 'Add another server first.',
+	copyCanceled: 'The copy was stopped.',
+	copyRemote: 'Copying on the server',
+	copyBadPath: 'This path cannot be used.',
 	presign: 'Presigned URL',
 	presignLead: 'The link stops working when the time runs out.',
 	presignCreate: 'Create',
@@ -374,13 +419,12 @@ const en: { [K in keyof typeof tr]: string } = {
 		'Download and install the app. Save your key and enter the bucket name. Folders open. Find a file and download it, or upload a new file into the open folder. Before you install, click the list image to see a sample.',
 	faqActions: 'What can I do?',
 	faqActionsList:
-		'You can list files and download them. A large download shows its progress at the top right, and the window stays open until it finishes.',
+		'You can list files and download them. A large download shows its progress at the top right, and the window stays open until it finishes. A file up to 1 GB can be copied between saved servers.',
 	faqActionsUpload:
 		'You can upload into the open folder. Drop the file on the window or straight onto the list.',
 	faqActionsConflict:
 		'If that name is already there, a warning appears. You can update the existing file or add the new one beside it.',
-	faqActionsLink:
-		'A presigned URL can be created for S3 buckets. FTP does not offer that link.',
+	faqActionsLink: 'A presigned URL can be created for S3 buckets. FTP does not offer that link.',
 	faqActionsDelete: 'Deleting comes later.',
 	faqSystems: 'Which systems are supported?',
 	faqSystemsA:
@@ -396,7 +440,7 @@ const en: { [K in keyof typeof tr]: string } = {
 		'The key stays on this computer. Listing and reading are enough to browse. Uploading also needs write permission. On Linux, GNOME Keyring or KWallet needs to be open so the key can be saved.',
 	faqDemo: 'Can I open my own bucket in the demo?',
 	faqDemoA:
-		'The demo is a sample list. Upload and presigned URLs do not run there. To open your own bucket, install the app and save the key there.',
+		'The demo is a sample list. Download, upload, copy, and presigned URLs do not run there. To open your own bucket, install the app and save the key there.',
 	footerBy: 'Developed by {name}',
 	footerRights: '© 2026 all rights reserved',
 	footerLegal: 'Legal',
@@ -414,5 +458,6 @@ export function around(template: string, token = 'name'): { before: string; afte
 	const needle = `{${token}}`;
 	const at = template.indexOf(needle);
 	if (at < 0) return { before: template, after: '' };
+
 	return { before: template.slice(0, at), after: template.slice(at + needle.length) };
 }

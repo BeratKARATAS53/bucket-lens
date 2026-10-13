@@ -85,6 +85,7 @@ export class Icon {
 
 export function iconForEntry(entry: BucketEntry): IconName {
 	if (entry.kind === 'folder') return 'folder';
+
 	switch (fileKind(entry.name)) {
 		case 'image':
 			return 'image';

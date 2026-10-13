@@ -107,6 +107,7 @@ export class App {
 	);
 	protected readonly scanning = computed(() => {
 		if (!this.filtering() || this.error()) return false;
+
 		return this.queryPending() || this.loading() || this.loadingMore();
 	});
 	protected readonly crumbs = computed(() => {
@@ -151,6 +152,7 @@ export class App {
 			void inject(Router).navigateByUrl('/demo', { replaceUrl: true });
 			return;
 		}
+
 		void this.store.load();
 		if (!this.demo) void this.lookForUpdate();
 		effect(() => {
@@ -162,6 +164,7 @@ export class App {
 			const previous = this.activeConnectionId;
 			this.activeConnectionId = id;
 			if (previous === undefined || previous === id) return;
+
 			untracked(() => {
 				this.prefix.set('');
 				this.query.set('');
@@ -195,6 +198,7 @@ export class App {
 	protected onKeydown(event: KeyboardEvent): void {
 		if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) return;
 		if (this.settingsOpen() || this.selected() || this.uploadOpen()) return;
+
 		const target = event.target;
 		if (
 			target instanceof HTMLInputElement ||
@@ -203,6 +207,7 @@ export class App {
 		) {
 			return;
 		}
+
 		event.preventDefault();
 		this.searchBox()?.nativeElement.focus();
 	}
@@ -223,6 +228,7 @@ export class App {
 			const version = typeof data.latest === 'string' ? data.latest : '';
 			const url = typeof data.url === 'string' ? data.url : '';
 			if (!version || !isReleasePage(url) || readStorage(updateSeenKey) === version) return;
+
 			this.update.set({ version, url });
 		} catch {
 			/* The desktop app stays quiet when the release page cannot be reached. */
@@ -231,6 +237,7 @@ export class App {
 
 	protected openSettings(): void {
 		if (this.demo) return;
+
 		this.selected.set(null);
 		this.settingsOpen.set(true);
 	}
@@ -259,11 +266,13 @@ export class App {
 			this.goTo(entry.key);
 			return;
 		}
+
 		this.selected.set(entry);
 	}
 
 	protected onQuery(event: Event): void {
 		if (!(event.target instanceof HTMLInputElement)) return;
+
 		this.query.set(event.target.value);
 		this.scheduleQuery(event.target.value);
 	}
@@ -284,6 +293,7 @@ export class App {
 			this.appliedQuery.set('');
 			return;
 		}
+
 		this.queryTimer = setTimeout(() => {
 			this.queryTimer = null;
 			this.appliedQuery.set(value);
@@ -299,6 +309,7 @@ export class App {
 			this.sortDir.update((dir) => (dir === 'asc' ? 'desc' : 'asc'));
 			return;
 		}
+
 		this.sortKey.set(key);
 		this.sortDir.set(key === 'name' ? 'asc' : 'desc');
 	}
@@ -328,6 +339,7 @@ export class App {
 	@HostListener('document:dragover', ['$event'])
 	protected onWindowDragOver(event: DragEvent): void {
 		if (!this.hasFiles(event)) return;
+
 		event.preventDefault();
 		if (event.dataTransfer) event.dataTransfer.dropEffect = this.canUpload() ? 'copy' : 'none';
 		this.dragging.set(this.canUpload());
@@ -336,6 +348,7 @@ export class App {
 	@HostListener('document:dragleave', ['$event'])
 	protected onWindowDragLeave(event: DragEvent): void {
 		if (event.relatedTarget instanceof Node) return;
+
 		this.dragging.set(false);
 	}
 
@@ -347,11 +360,14 @@ export class App {
 	@HostListener('document:drop', ['$event'])
 	protected onWindowDrop(event: DragEvent): void {
 		if (!this.hasFiles(event)) return;
+
 		event.preventDefault();
 		this.dragging.set(false);
 		if (!this.canUpload()) return;
+
 		const files = [...(event.dataTransfer?.files ?? [])];
 		if (!files.length) return;
+
 		this.selected.set(null);
 		this.queueUpload(files);
 	}
@@ -362,6 +378,7 @@ export class App {
 			return;
 		}
 		if (!this.token() || this.loading() || this.loadingMore()) return;
+
 		void this.reload(false);
 	}
 
@@ -383,6 +400,7 @@ export class App {
 	private async reload(reset: boolean): Promise<void> {
 		if (!this.store.ready()) return;
 		if (!reset && !this.token()) return;
+
 		const id = ++this.generation;
 		this.listAbort?.abort();
 		const abort = new AbortController();
@@ -434,6 +452,7 @@ export class App {
 					abort.signal,
 				);
 				if (id !== this.generation) return;
+
 				items = items.concat(page.entries);
 				seen += page.scanned ?? page.entries.length;
 				previous = next;
@@ -444,10 +463,12 @@ export class App {
 				if (!next || next === previous || (!broad && pages >= 1)) break;
 			} while (true);
 			if (id !== this.generation) return;
+
 			this.entries.set(items);
 			this.token.set(next);
 		} catch (error) {
 			if (id !== this.generation || isCancel(error)) return;
+
 			this.error.set(classifyS3Error(error));
 		} finally {
 			if (id === this.generation) {

@@ -173,16 +173,19 @@ export function providerLabelKey(
 	if (provider === 'wasabi') return 'providerWasabi';
 	if (provider === 's3') return 'providerS3';
 	if (provider === 'ftp') return 'providerFtp';
+
 	return 'providerBackblaze';
 }
 
 export function regionsFor(provider: ProviderId): readonly StorageRegion[] {
 	if (provider === 'ftp') return [];
+
 	return REGIONS[provider];
 }
 
 export function defaultRegion(provider: ProviderId): StorageRegion {
 	if (provider === 'ftp') return { id: '21', label: '21', endpoint: '' };
+
 	const regions = regionsFor(provider);
 	const preferred = provider === 'backblaze' ? 'us-west-004' : 'us-east-1';
 	return regions.find((region) => region.id === preferred) ?? regions[0];
@@ -191,6 +194,7 @@ export function defaultRegion(provider: ProviderId): StorageRegion {
 export function regionFromKeyId(keyId: string): string | null {
 	const trimmed = keyId.trim();
 	if (!/^\d{3}[0-9a-f]{12,}$/i.test(trimmed)) return null;
+
 	return CLUSTER_TO_REGION[trimmed.slice(0, 3)] ?? null;
 }
 
@@ -218,6 +222,7 @@ export function connectionTitle(connection: {
 	endpoint: string;
 }): string {
 	if (connection.provider !== 'ftp') return connection.bucket;
+
 	const path = connection.bucket.replace(/^\/+|\/+$/g, '');
 	return path || connection.endpoint;
 }
@@ -228,6 +233,7 @@ export function connectionMeta(connection: {
 	endpoint: string;
 }): string {
 	if (connection.provider !== 'ftp') return connection.region;
+
 	const port = connection.region && connection.region !== '21' ? `:${connection.region}` : '';
 	return `${connection.endpoint}${port}`;
 }
@@ -256,5 +262,6 @@ export function objectUrl(
 	if (connection.provider === 's3') {
 		return `https://${connection.bucket}.${connection.endpoint}/${encodedKey}`;
 	}
+
 	return `https://${connection.endpoint}/${encodeURIComponent(connection.bucket)}/${encodedKey}`;
 }

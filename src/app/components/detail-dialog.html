@@ -4,7 +4,7 @@
 @let ext = extensionOf(file.name);
 
 <div class="fixed inset-0 z-40 grid place-items-center p-4">
-	<div class="absolute inset-0 bg-ink/45" (click)="closed.emit()"></div>
+	<div class="absolute inset-0 bg-ink/45" (click)="requestClose()"></div>
 	<section
 		#panel
 		tabindex="-1"
@@ -37,7 +37,7 @@
 			<button
 				type="button"
 				class="focus-ring grid size-10 shrink-0 place-items-center rounded-full bg-sunken"
-				(click)="closed.emit()"
+				(click)="requestClose()"
 				[attr.aria-label]="t.close"
 			>
 				<app-icon name="close" class="size-5" />
@@ -107,6 +107,11 @@
 			</div>
 		}
 
+		@if (downloadDemo()) {
+			<p class="mt-3 rounded-2xl bg-sunken px-3 py-2 text-sm text-muted" role="status">
+				{{ t.downloadDemo }}
+			</p>
+		}
 		@if (downloadError(); as failure) {
 			<p class="mt-3 rounded-2xl bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
 				{{ messageForError(failure, t) }}
@@ -115,26 +120,37 @@
 
 		<div #presignRoot class="mt-5">
 			<div class="flex flex-wrap gap-2">
-				@if (!demo) {
-					<button
-						type="button"
-						class="btn btn-primary"
-						(click)="download()"
-						[disabled]="downloadBusy()"
-					>
-						<app-icon name="download" class="size-4" />
-						{{ downloadBusy() ? t.preparing : t.download }}
-					</button>
-				}
+				<button
+					type="button"
+					class="btn btn-primary"
+					(click)="download()"
+					[disabled]="downloadBusy() || copying()"
+				>
+					<app-icon name="download" class="size-4" />
+					{{ downloadBusy() ? t.preparing : t.download }}
+				</button>
 				@if (!isFtp()) {
 					<button type="button" class="btn btn-quiet" (click)="togglePresign()">
 						<app-icon name="link" class="size-4" />
 						{{ t.presign }}
 					</button>
 				}
+				<button
+					type="button"
+					class="btn btn-quiet"
+					(click)="toggleCopy()"
+					[disabled]="copying() || downloadBusy()"
+				>
+					<app-icon name="copy" class="size-4" />
+					{{ copying() ? t.copying : t.copyTo }}
+				</button>
 			</div>
 			@if (!isFtp() && presignOpen()) {
-				<form class="rise mt-3 rounded-2xl bg-sunken p-3" (submit)="createPresign($event)">
+				<form
+					#presignForm
+					class="rise mt-3 rounded-2xl bg-sunken p-3"
+					(submit)="createPresign($event)"
+				>
 					<p class="text-sm font-semibold">{{ t.presign }}</p>
 					<p class="mt-1 text-xs leading-5 text-muted">{{ t.presignLead }}</p>
 					<div
@@ -157,45 +173,162 @@
 					<button type="submit" class="btn btn-primary mt-3" [disabled]="presigning()">
 						{{ presigning() ? t.preparing : t.presignCreate }}
 					</button>
+					@if (presignDemo() || presignError() || presignUrl()) {
+						<div #presignFeedback>
 							@if (presignDemo()) {
-								<p class="mt-3 text-sm text-muted" role="status">{{ t.presignDemo }}</p>
+								<p class="mt-3 text-sm text-muted" role="status">
+									{{ t.presignDemo }}
+								</p>
 							}
 							@if (presignError(); as failure) {
-						<p class="mt-3 text-sm text-danger" role="alert">
-							{{ messageForError(failure, t) }}
-						</p>
-					}
-					@if (presignUrl(); as url) {
-						<p class="mt-3 text-xs text-muted">{{ presignReady() }}</p>
-						<div class="mt-2 flex items-start gap-1.5">
-							<p
-								class="min-w-0 flex-1 font-mono text-xs leading-5 break-all transition-colors"
-								[class.text-ok]="presignCopied()"
-								[class.text-danger]="presignFailed()"
-							>
-								{{ url }}
-							</p>
-							<button
-								type="button"
-								class="focus-ring grid size-8 shrink-0 place-items-center rounded-full transition-colors"
-								[class.text-muted]="!presignCopied() && !presignFailed()"
-								[class.text-ok]="presignCopied()"
-								[class.text-danger]="presignFailed()"
-								(click)="copyPresign()"
-								[attr.aria-label]="
-									presignCopied()
-										? t.copied
-										: presignFailed()
-											? t.copyFailed
-											: t.copyPath
-								"
-							>
-								<app-icon name="copy" class="size-4" />
-							</button>
+								<p class="mt-3 text-sm text-danger" role="alert">
+									{{ messageForError(failure, t) }}
+								</p>
+							}
+							@if (presignUrl(); as url) {
+								<p class="mt-3 text-xs text-muted">{{ presignReady() }}</p>
+								<div class="mt-2 flex items-start gap-1.5">
+									<p
+										class="min-w-0 flex-1 font-mono text-xs leading-5 break-all transition-colors"
+										[class.text-ok]="presignCopied()"
+										[class.text-danger]="presignFailed()"
+									>
+										{{ url }}
+									</p>
+									<button
+										type="button"
+										class="focus-ring grid size-8 shrink-0 place-items-center rounded-full transition-colors"
+										[class.text-muted]="!presignCopied() && !presignFailed()"
+										[class.text-ok]="presignCopied()"
+										[class.text-danger]="presignFailed()"
+										(click)="copyPresign()"
+										[attr.aria-label]="
+											presignCopied()
+												? t.copied
+												: presignFailed()
+													? t.copyFailed
+													: t.copyPath
+										"
+									>
+										<app-icon name="copy" class="size-4" />
+									</button>
+								</div>
+							}
 						</div>
 					}
 				</form>
 			}
 		</div>
+
+		@if (copyOpen()) {
+			<form
+				#copyForm
+				class="rise mt-3 rounded-2xl bg-sunken p-3"
+				(submit)="submitCopy($event)"
+			>
+				<p class="text-sm font-semibold">{{ t.copyTo }}</p>
+				<p class="mt-1 text-xs leading-5 text-muted">{{ t.copyLead }}</p>
+				@if (destinations().length === 0) {
+					<p class="mt-3 text-sm text-muted">{{ t.copyNeedServer }}</p>
+				} @else {
+					<label class="mt-3 block">
+						<span class="label">{{ t.copyServer }}</span>
+						<select
+							class="field"
+							name="destination"
+							[value]="copyTarget()"
+							[disabled]="copying()"
+							(change)="pickDestination($event)"
+						>
+							@for (item of destinations(); track item.id) {
+								<option [value]="item.id" [selected]="item.id === copyTarget()">
+									{{ destinationLabel(item) }}
+								</option>
+							}
+						</select>
+					</label>
+					<label class="mt-3 block">
+						<span class="label">{{ t.copyTargetPath }}</span>
+						<input
+							class="field font-mono"
+							name="destinationKey"
+							[value]="copyPathText()"
+							[disabled]="copying()"
+							(input)="onCopyPath($event)"
+							autocomplete="off"
+							spellcheck="false"
+						/>
+					</label>
+					@if (copyBlocked() === 'large') {
+						<p class="mt-3 text-sm text-danger" role="alert">{{ t.copyTooLarge }}</p>
+					} @else if (copyBlocked() === 'unknown') {
+						<p class="mt-3 text-sm text-danger" role="alert">{{ t.copyUnknownSize }}</p>
+					} @else if (!copying()) {
+						<button
+							type="submit"
+							class="btn btn-primary mt-3"
+							[disabled]="copyBlocked() !== null"
+						>
+							{{ t.copyStart }}
+						</button>
+					}
+				}
+				@if (copying()) {
+					<p class="mt-3 text-sm font-semibold">{{ t.copying }}</p>
+					<div
+						class="mt-2 h-1.5 overflow-hidden rounded-full bg-raised"
+						role="progressbar"
+						aria-valuemin="0"
+						aria-valuemax="100"
+						[attr.aria-valuenow]="copyPercent()"
+						[attr.aria-label]="t.copying"
+					>
+						@if (copyLoaded() <= 0) {
+							<div class="loadbar h-full bg-accent"></div>
+						} @else {
+							<div
+								class="h-full rounded-full bg-accent"
+								[style.width.%]="copyPercent()"
+							></div>
+						}
+					</div>
+					<p class="mt-2 text-xs text-muted">
+						@if (copyLoaded() <= 0) {
+							{{ copyTotal() > 0 ? t.copyRemote : t.preparing }}
+						} @else {
+							{{ formatBytes(copyLoaded(), lang) }} /
+							{{ formatBytes(copyTotal(), lang) }}
+						}
+					</p>
+					<p class="mt-1 text-xs text-muted">{{ t.copyHold }}</p>
+					<button type="button" class="btn btn-quiet mt-3" (click)="stopCopy()">
+						{{ t.cancel }}
+					</button>
+				}
+				@if (copyDemo() || copyError() || copyExists() || copyDone()) {
+					<div #copyFeedback>
+						@if (copyDemo()) {
+							<p class="mt-3 text-sm text-muted" role="status">{{ t.copyDemo }}</p>
+						}
+						@if (copyDone()) {
+							<p class="mt-3 text-sm text-ok" role="status">{{ t.copyDone }}</p>
+						}
+						@if (copyError(); as failure) {
+							<p class="mt-3 text-sm text-danger" role="alert">{{ failure }}</p>
+						}
+						@if (copyExists()) {
+							<p class="mt-3 text-sm text-danger" role="alert">{{ t.copyExists }}</p>
+							<button
+								type="button"
+								class="btn btn-quiet mt-3"
+								(click)="submitCopy($event, true)"
+							>
+								{{ t.copyReplace }}
+							</button>
+						}
+					</div>
+				}
+			</form>
+		}
 	</section>
 </div>

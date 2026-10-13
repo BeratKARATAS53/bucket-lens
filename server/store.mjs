@@ -29,6 +29,7 @@ export async function readStore(filePath, keystore) {
 		parsed = JSON.parse(await readFile(filePath, 'utf8'));
 	} catch (error) {
 		if (error && error.code === 'ENOENT') return { activeId: null, connections: [] };
+
 		throw error;
 	}
 
@@ -149,6 +150,7 @@ function normalizeStored(value) {
 
 function isLegacyConnection(value) {
 	if (!value || typeof value !== 'object' || typeof value.id === 'string') return false;
+
 	return legacyFields.every((key) => typeof value[key] === 'string' && value[key].trim());
 }
 
@@ -156,5 +158,6 @@ function isStoredConnection(value) {
 	if (!value || typeof value !== 'object' || typeof value.id !== 'string' || !value.id.trim()) {
 		return false;
 	}
+
 	return publicFields.every((key) => typeof value[key] === 'string' && value[key].trim());
 }

@@ -23,6 +23,7 @@ export async function lookupGitHubRelease(signal) {
 		signal,
 	});
 	if (!response.ok) return null;
+
 	const body = await response.json();
 	return {
 		version: typeof body.tag_name === 'string' ? body.tag_name : '',
@@ -45,6 +46,7 @@ export function describeRelease(current, latest) {
 	if (!version || !url || !isNewer(version, current)) {
 		return { current, latest: null, url: null };
 	}
+
 	return { current, latest: version, url };
 }
 
@@ -52,6 +54,7 @@ export function isNewer(latest, current) {
 	const next = versionParts(latest);
 	const now = versionParts(current);
 	if (!next || !now) return false;
+
 	for (let index = 0; index < 3; index += 1) {
 		if (next[index] !== now[index]) return next[index] > now[index];
 	}
@@ -65,13 +68,16 @@ function normalizeVersion(value) {
 
 function versionParts(value) {
 	if (typeof value !== 'string') return null;
+
 	const match = /^v?(\d+)\.(\d+)\.(\d+)$/.exec(value.trim());
 	if (!match) return null;
+
 	return [Number(match[1]), Number(match[2]), Number(match[3])];
 }
 
 function releasePage(value) {
 	if (typeof value !== 'string') return null;
+
 	let url;
 	try {
 		url = new URL(value);
@@ -79,8 +85,10 @@ function releasePage(value) {
 		return null;
 	}
 	if (url.protocol !== 'https:' || url.username || url.password) return null;
+
 	const page = `${url.origin}${url.pathname}`.toLowerCase();
 	const allowed = releaseRoots.some((root) => page === root || page.startsWith(`${root}/`));
 	if (!allowed) return null;
+
 	return url.origin + url.pathname;
 }

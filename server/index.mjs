@@ -7,6 +7,7 @@ import { KeystoreError } from './keystore.mjs';
 import { RequestError } from './request-error.mjs';
 import { serveStatic } from './static.mjs';
 import { createConnectionStore, defaultConnectionPath, publicStore } from './store.mjs';
+import { copyBetween as copyObjects, createCopyRunner } from './copy.mjs';
 import {
 	headObject,
 	isObjectKey,
@@ -26,11 +27,13 @@ export function startServer({
 	keystore = null,
 	version = readAppVersion(),
 	releaseLookup = lookupGitHubRelease,
+	copyBetween = null,
 } = {}) {
 	const store = createConnectionStore({
 		filePath: dataDir ? join(dataDir, 'connection.json') : defaultConnectionPath(),
 		...(keystore ? { keystore } : {}),
 	});
+	const copies = createCopyRunner(copyBetween ?? copyObjects);
 	const server = createServer(async (req, res) => {
 		try {
 			const url = new URL(req.url ?? '/', 'http://127.0.0.1');
@@ -86,6 +89,7 @@ export function startServer({
 								signal,
 							);
 				if (signal.aborted) return;
+
 				send(res, 200, page);
 				return;
 			}
@@ -95,6 +99,7 @@ export function startServer({
 					send(res, 400, { code: 'MissingKey', message: 'key is required' });
 					return;
 				}
+
 				send(res, 200, await headObject(await requireConnection(store), key));
 				return;
 			}
@@ -138,6 +143,7 @@ export function startServer({
 					send(res, 400, { code: 'InvalidDuration', message: 'Duration is not allowed' });
 					return;
 				}
+
 				const signed = await presignObject(
 					await requireConnection(store),
 					key,
@@ -146,12 +152,63 @@ export function startServer({
 				send(res, 200, { url: signed, expiresIn: minutes * 60 });
 				return;
 			}
+			if (
+				url.pathname === '/api/objects/copy' &&
+				(req.method === 'GET' || req.method === 'DELETE')
+			) {
+				const job =
+					req.method === 'DELETE'
+						? copies.cancel(url.searchParams.get('id'))
+						: copies.get(url.searchParams.get('id'));
+				if (!job) {
+					send(res, 404, { code: 'NotFound', message: 'Copy was not found' });
+					return;
+				}
+
+				send(res, 200, job);
+				return;
+			}
+			if (req.method === 'POST' && url.pathname === '/api/objects/copy') {
+				const body = await readBody(req);
+				const saved = await store.readStore();
+				const source = saved.connections.find((item) => item.id === saved.activeId);
+				if (!source) throw new HttpError(404, 'NotConfigured', 'No connection file');
+				const destination = saved.connections.find(
+					(item) => item.id === text(body.destinationId),
+				);
+				if (!destination) throw new HttpError(404, 'NotFound', 'Connection was not found');
+				if (destination.id === source.id) {
+					throw new HttpError(400, 'SameConnection', 'Pick a different server');
+				}
+				const sourceKey = cleanKey(body.key);
+				const destinationKey = cleanKey(body.destinationKey) || sourceKey;
+				if (!isObjectKey(sourceKey) || !isObjectKey(destinationKey)) {
+					throw new HttpError(
+						400,
+						sourceKey && destinationKey ? 'InvalidKey' : 'MissingKey',
+						'key is required',
+					);
+				}
+				send(
+					res,
+					202,
+					copies.start({
+						source,
+						destination,
+						sourceKey,
+						destinationKey,
+						overwrite: body.overwrite === true,
+					}),
+				);
+				return;
+			}
 			if (req.method === 'GET' && url.pathname === '/api/objects/download') {
 				const key = url.searchParams.get('key');
 				if (!key) {
 					send(res, 400, { code: 'MissingKey', message: 'key is required' });
 					return;
 				}
+
 				const response = await openDownload(await requireConnection(store), key);
 				const filename = key.split('/').filter(Boolean).at(-1) || 'download';
 				const headers = {
@@ -173,6 +230,7 @@ export function startServer({
 				await serveStatic(staticRoot, url.pathname, res);
 				return;
 			}
+
 			send(res, 404, { code: 'NotFound', message: 'Unknown route' });
 		} catch (error) {
 			if (error?.code === 'ERR_CANCELED' || error?.name === 'CanceledError') return;
@@ -188,6 +246,7 @@ export function startServer({
 				send(res, error.status, { code: error.code, message: error.message });
 				return;
 			}
+
 			send(res, 500, { code: 'ServerError', message: 'Local API failed' });
 		}
 	});
@@ -294,6 +353,10 @@ function text(value) {
 	return typeof value === 'string' ? value.trim() : '';
 }
 
+function cleanKey(value) {
+	return text(value).replace(/^\/+/, '');
+}
+
 function normalizeEndpoint(value) {
 	return value
 		.replace(/^(https?|ftps?):\/\//i, '')
@@ -304,6 +367,7 @@ function normalizeEndpoint(value) {
 function clampKeys(value) {
 	const parsed = Number(value);
 	if (!Number.isFinite(parsed)) return 200;
+
 	return Math.min(1000, Math.max(1, Math.trunc(parsed)));
 }
 
@@ -311,8 +375,10 @@ const PRESIGN_MINUTES = new Set([5, 10, 15, 30, 60, 90, 120]);
 
 function mediaType(value) {
 	if (typeof value !== 'string') return 'application/octet-stream';
+
 	const type = value.split(';')[0].trim().toLowerCase();
 	if (!/^[a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+$/.test(type)) return 'application/octet-stream';
+
 	return type;
 }
 
@@ -340,6 +406,7 @@ function readBody(req) {
 				req.destroy();
 				return;
 			}
+
 			chunks.push(chunk);
 		});
 		req.on('end', () => {
@@ -348,6 +415,7 @@ function readBody(req) {
 				resolvePromise({});
 				return;
 			}
+
 			try {
 				resolvePromise(JSON.parse(raw));
 			} catch {

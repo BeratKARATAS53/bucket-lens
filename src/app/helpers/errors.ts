@@ -29,5 +29,6 @@ export function classifyS3Error(error: unknown): S3Failure {
 	) {
 		return { kind: 'forbidden', code };
 	}
+
 	return { kind: 'generic', code: code || String(status) };
 }

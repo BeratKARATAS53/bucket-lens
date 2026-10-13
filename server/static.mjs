@@ -60,6 +60,7 @@ function safePath(root, pathname) {
 	const relative = decoded.replace(/^[/\\]+/, '');
 	const full = resolve(rootPath, relative);
 	if (full !== rootPath && !full.startsWith(`${rootPath}${sep}`)) return null;
+
 	return full;
 }
 

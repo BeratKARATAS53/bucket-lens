@@ -21,16 +21,66 @@ const files: {
 	lastModified: string;
 	contentType: string;
 }[] = [
-	{ key: 'photos/shore.jpg', size: 2_401_122, lastModified: '2026-06-12T09:24:00.000Z', contentType: 'image/jpeg' },
-	{ key: 'photos/kitchen.png', size: 1_844_320, lastModified: '2026-05-02T18:11:00.000Z', contentType: 'image/png' },
-	{ key: 'photos/trip/sunset.webp', size: 980_441, lastModified: '2026-07-19T16:40:00.000Z', contentType: 'image/webp' },
-	{ key: 'videos/intro.mp4', size: 48_221_004, lastModified: '2026-03-08T11:02:00.000Z', contentType: 'video/mp4' },
-	{ key: 'audio/voice-note.mp3', size: 3_204_118, lastModified: '2026-04-21T08:16:00.000Z', contentType: 'audio/mpeg' },
-	{ key: 'documents/agreement.pdf', size: 220_418, lastModified: '2026-01-14T13:45:00.000Z', contentType: 'application/pdf' },
-	{ key: 'documents/notes.txt', size: 4_096, lastModified: '2026-02-02T10:00:00.000Z', contentType: 'text/plain' },
-	{ key: 'documents/report.docx', size: 88_320, lastModified: '2026-08-01T15:30:00.000Z', contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
-	{ key: 'archives/backup.zip', size: 12_440_900, lastModified: '2025-12-20T07:55:00.000Z', contentType: 'application/zip' },
-	{ key: 'readme.md', size: 1_240, lastModified: '2026-09-03T12:00:00.000Z', contentType: 'text/markdown' },
+	{
+		key: 'photos/shore.jpg',
+		size: 2_401_122,
+		lastModified: '2026-06-12T09:24:00.000Z',
+		contentType: 'image/jpeg',
+	},
+	{
+		key: 'photos/kitchen.png',
+		size: 1_844_320,
+		lastModified: '2026-05-02T18:11:00.000Z',
+		contentType: 'image/png',
+	},
+	{
+		key: 'photos/trip/sunset.webp',
+		size: 980_441,
+		lastModified: '2026-07-19T16:40:00.000Z',
+		contentType: 'image/webp',
+	},
+	{
+		key: 'videos/intro.mp4',
+		size: 48_221_004,
+		lastModified: '2026-03-08T11:02:00.000Z',
+		contentType: 'video/mp4',
+	},
+	{
+		key: 'audio/voice-note.mp3',
+		size: 3_204_118,
+		lastModified: '2026-04-21T08:16:00.000Z',
+		contentType: 'audio/mpeg',
+	},
+	{
+		key: 'documents/agreement.pdf',
+		size: 220_418,
+		lastModified: '2026-01-14T13:45:00.000Z',
+		contentType: 'application/pdf',
+	},
+	{
+		key: 'documents/notes.txt',
+		size: 4_096,
+		lastModified: '2026-02-02T10:00:00.000Z',
+		contentType: 'text/plain',
+	},
+	{
+		key: 'documents/report.docx',
+		size: 88_320,
+		lastModified: '2026-08-01T15:30:00.000Z',
+		contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+	},
+	{
+		key: 'archives/backup.zip',
+		size: 12_440_900,
+		lastModified: '2025-12-20T07:55:00.000Z',
+		contentType: 'application/zip',
+	},
+	{
+		key: 'readme.md',
+		size: 1_240,
+		lastModified: '2026-09-03T12:00:00.000Z',
+		contentType: 'text/markdown',
+	},
 ];
 
 @Injectable()
@@ -61,8 +111,13 @@ export class DemoConnectionService extends ConnectionService {
 
 @Injectable()
 export class DemoBucketService extends BucketService {
-	override async list(prefix: string, token: string | null, delimited: boolean): Promise<ListPage> {
+	override async list(
+		prefix: string,
+		token: string | null,
+		delimited: boolean,
+	): Promise<ListPage> {
 		if (token) return { entries: [], nextToken: null, scanned: 0 };
+
 		const entries = delimited ? children(prefix) : nestedFiles(prefix);
 		return { entries, nextToken: null, scanned: entries.length };
 	}
@@ -106,13 +161,12 @@ function children(prefix: string): BucketEntry[] {
 }
 
 function nestedFiles(prefix: string): BucketEntry[] {
-	return files.filter((file) => file.key.startsWith(prefix)).map((file) => fileEntry(file, prefix));
+	return files
+		.filter((file) => file.key.startsWith(prefix))
+		.map((file) => fileEntry(file, prefix));
 }
 
-function fileEntry(
-	file: (typeof files)[number],
-	prefix: string,
-): BucketEntry {
+function fileEntry(file: (typeof files)[number], prefix: string): BucketEntry {
 	const relative = file.key.slice(prefix.length);
 	return {
 		kind: 'file',

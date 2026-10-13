@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { AwsClient } from 'aws4fetch';
-import { headFtp, listFtp, openFtpDownload, putFtp } from './ftp.mjs';
+import { headFtp, listFtp, openFtpDownload, putFtp, removeFtp } from './ftp.mjs';
 import { RequestError } from './request-error.mjs';
 
 export class S3RequestError extends RequestError {
@@ -14,6 +14,7 @@ export async function listObjects(connection, prefix, token, delimited, maxKeys,
 	if (connection?.provider === 'ftp') {
 		return listFtp(connection, prefix, token, delimited, maxKeys, signal);
 	}
+
 	const params = new URLSearchParams({
 		'list-type': '2',
 		'max-keys': String(maxKeys),
@@ -124,6 +125,7 @@ export async function searchObjects(
 
 export async function headObject(connection, key) {
 	if (connection?.provider === 'ftp') return headFtp(connection, key);
+
 	const response = await signedRequest(connection, objectPath(key), 'HEAD');
 	if (response.status >= 400) throw await errorFromResponse(response);
 	return {
@@ -135,11 +137,60 @@ export async function headObject(connection, key) {
 	};
 }
 
-export async function openDownload(connection, key) {
+export async function openDownload(connection, key, signal) {
 	if (connection?.provider === 'ftp') return openFtpDownload(connection, key);
-	const response = await signedRequest(connection, objectPath(key), 'GET', 'stream');
+
+	const response = await signedRequest(connection, objectPath(key), 'GET', 'stream', signal);
 	if (response.status >= 400) throw await errorFromResponse(response);
 	return response;
+}
+
+export function copySourceHeader(bucket, key) {
+	const encodedKey = String(key)
+		.split('/')
+		.map((part) => encodeURIComponent(part))
+		.join('/');
+	return `/${encodeURIComponent(bucket)}/${encodedKey}`;
+}
+
+export async function copyS3Object(destination, source, sourceKey, destinationKey, signal) {
+	if (destination?.provider === 'ftp' || source?.provider === 'ftp') {
+		throw new RequestError(400, 'CopyUnsupported', 'Server-side copy needs S3');
+	}
+	if (!isObjectKey(sourceKey) || !isObjectKey(destinationKey)) {
+		throw new RequestError(400, 'InvalidKey', 'Invalid path');
+	}
+	const response = await signedRequest(
+		destination,
+		objectPath(destinationKey),
+		'PUT',
+		'text',
+		signal,
+		{
+			headers: {
+				'x-amz-copy-source': copySourceHeader(source.bucket, sourceKey),
+				'x-amz-metadata-directive': 'COPY',
+				'x-amz-content-sha256': 'UNSIGNED-PAYLOAD',
+			},
+			allHeaders: true,
+			contentLength: 0,
+		},
+	);
+	if (response.status >= 400) throw await errorFromResponse(response);
+	const xml = String(response.data ?? '');
+	if (xml.includes('<Error>')) {
+		throw new S3RequestError(response.status, tagText(xml, 'Code'), tagText(xml, 'Message'));
+	}
+	return { key: destinationKey };
+}
+
+export async function deleteObject(connection, key, signal) {
+	if (!isObjectKey(key)) throw new RequestError(400, 'InvalidKey', 'Invalid path');
+	if (connection?.provider === 'ftp') return removeFtp(connection, key);
+
+	const response = await signedRequest(connection, objectPath(key), 'DELETE', 'text', signal);
+	if (response.status === 404) return;
+	if (response.status >= 400) throw await errorFromResponse(response);
 }
 
 const PRESIGN_SECONDS = new Set([300, 600, 900, 1800, 3600, 5400, 7200]);
@@ -147,6 +198,7 @@ const PRESIGN_SECONDS = new Set([300, 600, 900, 1800, 3600, 5400, 7200]);
 export function isObjectKey(value) {
 	if (typeof value !== 'string' || !value || value.length > 1024) return false;
 	if (value.includes('\\') || value.includes('\0')) return false;
+
 	const parts = value.split('/');
 	return parts.every((part) => part && part !== '.' && part !== '..');
 }
@@ -159,6 +211,7 @@ export async function putObject(
 ) {
 	if (!isObjectKey(key)) throw new RequestError(400, 'InvalidKey', 'Invalid path');
 	if (connection?.provider === 'ftp') return putFtp(connection, key, body, undefined, signal);
+
 	const response = await signedRequest(connection, objectPath(key), 'PUT', 'text', signal, {
 		headers: {
 			'content-type': contentType || 'application/octet-stream',
@@ -266,6 +319,7 @@ function requestUrl(connection, path) {
 	if (connection.provider === 's3') {
 		return `https://${connection.bucket}.${connection.endpoint}${path}`;
 	}
+
 	return `https://${connection.endpoint}/${encodeURIComponent(connection.bucket)}${path}`;
 }
 
@@ -279,6 +333,7 @@ function objectPath(key) {
 
 function tagText(block, tag) {
 	if (!block) return null;
+
 	const match = block.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`));
 	return match ? decodeXml(match[1].trim()) : null;
 }
@@ -294,6 +349,7 @@ function decodeXml(value) {
 
 function decodeKey(value) {
 	if (!value) return null;
+
 	const normalized = value.replace(/\+/g, ' ');
 	try {
 		return decodeURIComponent(normalized);
@@ -324,6 +380,7 @@ function matchesEntry(entry, needle, kind, lang) {
 		if (fileKindOf(entry.name) !== KIND_TO_FILE[kind]) return false;
 	}
 	if (!needle) return true;
+
 	const locale = lang === 'en' ? 'en' : 'tr';
 	return `${entry.name} ${entry.relative}`.toLocaleLowerCase(locale).includes(needle);
 }
@@ -340,6 +397,7 @@ function fileKindOf(name) {
 
 function headerNumber(value) {
 	if (!value) return null;
+
 	const size = Number(value);
 	return Number.isFinite(size) ? size : null;
 }

@@ -1,7 +1,16 @@
 import assert from 'node:assert/strict';
 import { Readable } from 'node:stream';
 import { test } from 'node:test';
-import { ftpJoin, ftpPort, listFtp, normalizeFtpHost, normalizeFtpRoot, putFtp } from './ftp.mjs';
+import {
+	ftpJoin,
+	ftpPort,
+	listFtp,
+	normalizeFtpHost,
+	normalizeFtpRoot,
+	probeFtpRead,
+	putFtp,
+	removeFtp,
+} from './ftp.mjs';
 
 test('ftp host, port, and folder are normalized', () => {
 	assert.equal(normalizeFtpHost('ftp://files.example.com/public'), 'files.example.com');
@@ -76,6 +85,64 @@ test('ftp upload writes the stream at the joined path', async () => {
 	}));
 	assert.equal(remote, 'docs/a.txt');
 	assert.equal(text, 'hello');
+});
+
+test('ftp read permission uses size and falls back to the first byte', async () => {
+	let sized = 0;
+	await probeFtpRead(connection(), 'docs/a.txt', async () => ({
+		async size() {
+			sized += 1;
+		},
+		downloadTo() {
+			throw new Error('should not download');
+		},
+		close() {},
+	}));
+	assert.equal(sized, 1);
+
+	let downloaded = 0;
+	await probeFtpRead(connection(), 'docs/a.txt', async () => ({
+		async size() {
+			const error = new Error('500 unsupported');
+			error.code = 500;
+			throw error;
+		},
+		downloadTo(stream) {
+			downloaded += 1;
+			stream.end();
+		},
+		close() {},
+	}));
+	assert.equal(downloaded, 1);
+
+	await assert.rejects(
+		() =>
+			probeFtpRead(connection(), 'docs/a.txt', async () => ({
+				async size() {
+					const error = new Error('550 denied');
+					error.code = 550;
+					throw error;
+				},
+				downloadTo() {
+					const error = new Error('550 denied');
+					error.code = 550;
+					throw error;
+				},
+				close() {},
+			})),
+		(error) => error.code === 'AccessDenied',
+	);
+});
+
+test('ftp delete removes the joined path', async () => {
+	let remote = '';
+	await removeFtp(connection(), 'docs/a.txt', async () => ({
+		async remove(path) {
+			remote = path;
+		},
+		close() {},
+	}));
+	assert.equal(remote, 'docs/a.txt');
 });
 
 test('ftp upload rejects a path that leaves the folder', async () => {

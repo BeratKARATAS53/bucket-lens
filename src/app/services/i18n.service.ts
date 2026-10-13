@@ -25,6 +25,7 @@ export class I18nService {
 	private read(): Lang {
 		const stored = readStorage(LANG_KEY);
 		if (stored === 'tr' || stored === 'en') return stored;
+
 		return navigator.language.toLowerCase().startsWith('tr') ? 'tr' : 'en';
 	}
 }

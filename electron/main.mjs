@@ -70,6 +70,7 @@ if (!app.requestSingleInstanceLock()) {
 			event.preventDefault();
 			return;
 		}
+
 		server?.close();
 	});
 

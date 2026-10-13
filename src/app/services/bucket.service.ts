@@ -9,6 +9,25 @@ export interface PresignLink {
 	expiresIn: number;
 }
 
+export interface CopyRequest {
+	key: string;
+	destinationId: string;
+	destinationKey: string;
+	overwrite?: boolean;
+}
+
+export interface CopyJob {
+	id: string;
+	status: 'checking' | 'copying' | 'done' | 'error';
+	loaded: number;
+	total: number;
+	key: string;
+	code: string | null;
+	method: 'server' | 'stream' | null;
+}
+
+export const COPY_LIMIT_BYTES = 1024 * 1024 * 1024;
+
 export interface ListFilter {
 	q: string;
 	kind: KindFilter;
@@ -53,6 +72,7 @@ export class BucketService {
 			if (!isAxiosError(error)) throw error;
 			const code = (error.response?.data as { code?: string } | undefined)?.code;
 			if (error.response?.status === 404 || code === 'NoSuchKey') return false;
+
 			throw error;
 		}
 	}
@@ -71,6 +91,20 @@ export class BucketService {
 				onProgress?.(event.loaded, event.total ?? file.size);
 			},
 		});
+	}
+
+	async startCopy(request: CopyRequest): Promise<CopyJob> {
+		const { data } = await api.post<CopyJob>('/objects/copy', request);
+		return data;
+	}
+
+	async copyStatus(id: string): Promise<CopyJob> {
+		const { data } = await api.get<CopyJob>('/objects/copy', { params: { id } });
+		return data;
+	}
+
+	async cancelCopy(id: string): Promise<void> {
+		await api.delete('/objects/copy', { params: { id } });
 	}
 
 	async presign(key: string, minutes: number): Promise<PresignLink> {

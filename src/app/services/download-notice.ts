@@ -26,16 +26,26 @@ declare global {
 @Injectable({ providedIn: 'root' })
 export class DownloadNotice {
 	readonly toast = signal<DownloadToast | null>(null);
+	private readonly pinned = signal(0);
 
 	private readonly bucket = inject(BucketService);
 	private hideTimer = 0;
 
 	constructor() {
 		effect(() => {
-			const locked = this.toast()?.phase === 'active';
+			const locked = this.toast()?.phase === 'active' || this.pinned() > 0;
 			if (typeof window === 'undefined') return;
+
 			window.bucketLens?.setDownloadLock(locked);
 		});
+	}
+
+	pin(): void {
+		this.pinned.update((count) => count + 1);
+	}
+
+	unpin(): void {
+		this.pinned.update((count) => Math.max(0, count - 1));
 	}
 
 	busy(): boolean {
@@ -100,5 +110,6 @@ export class DownloadNotice {
 
 export function downloadPercent(item: DownloadToast): number {
 	if (item.total <= 0) return 0;
+
 	return Math.min(100, Math.round((item.loaded / item.total) * 100));
 }

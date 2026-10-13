@@ -85,6 +85,7 @@ export class Landing {
 		const t = this.i18n.t();
 		if (id === 'windows') return t.landingWindows;
 		if (id === 'deb') return t.landingDeb;
+
 		return t.landingAppImage;
 	}
 
@@ -92,6 +93,7 @@ export class Landing {
 		const t = this.i18n.t();
 		if (id === 'windows') return t.landingWindowsHint;
 		if (id === 'deb') return t.landingDebHint;
+
 		return t.landingAppImageHint;
 	}
 
@@ -108,5 +110,6 @@ function detectPlatform(): Platform {
 	if (/Windows/i.test(ua)) return 'windows';
 	if (/Mac OS|Macintosh/i.test(ua)) return 'mac';
 	if (/Linux/i.test(ua)) return 'linux';
+
 	return 'other';
 }

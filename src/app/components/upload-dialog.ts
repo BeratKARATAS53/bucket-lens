@@ -75,6 +75,7 @@ export class UploadDialog {
 			const batch = this.batch();
 			const files = this.files();
 			if (!batch || batch === this.seenBatch) return;
+
 			this.seenBatch = batch;
 			untracked(() => this.enqueue(files));
 		});
@@ -100,11 +101,13 @@ export class UploadDialog {
 
 	protected requestClose(): void {
 		if (this.busy()) return;
+
 		this.closed.emit();
 	}
 
 	protected onPick(event: Event): void {
 		if (!(event.target instanceof HTMLInputElement)) return;
+
 		this.enqueue([...(event.target.files ?? [])]);
 		event.target.value = '';
 	}
@@ -112,6 +115,7 @@ export class UploadDialog {
 	protected replace(id: string): void {
 		const item = this.find(id);
 		if (!item || item.status !== 'conflict') return;
+
 		this.claimed.add(item.name);
 		this.patch(id, { status: 'ready' });
 		this.pump();
@@ -120,6 +124,7 @@ export class UploadDialog {
 	protected beside(id: string): void {
 		const item = this.find(id);
 		if (!item || item.status !== 'conflict') return;
+
 		this.patch(id, { status: 'checking', error: null });
 		void this.placeBeside(item);
 	}
@@ -127,6 +132,7 @@ export class UploadDialog {
 	protected retry(id: string): void {
 		const item = this.find(id);
 		if (!item || item.status !== 'error' || item.error === 'badName' || item.error === 'demo') return;
+
 		this.started.delete(id);
 		this.claimed.add(item.name);
 		this.patch(id, { status: 'checking', error: null, progress: 0 });
@@ -137,6 +143,7 @@ export class UploadDialog {
 		if (item.error === 'badName') return this.i18n.t().uploadBadName;
 		if (item.error === 'demo') return this.i18n.t().uploadDemo;
 		if (item.error === 'forbidden') return this.i18n.t().uploadForbidden;
+
 		return item.error ? messageForError(item.error, this.i18n.t()) : '';
 	}
 
@@ -175,6 +182,7 @@ export class UploadDialog {
 			});
 		}
 		if (!next.length) return;
+
 		this.items.update((list) => [...list, ...next]);
 		for (const item of next) {
 			if (item.status === 'checking') void this.inspect(item.id);
@@ -184,9 +192,11 @@ export class UploadDialog {
 	private async inspect(id: string): Promise<void> {
 		const item = this.find(id);
 		if (!item) return;
+
 		try {
 			const exists = await this.bucket.exists(`${item.prefix}${item.name}`);
 			if (this.dead) return;
+
 			const current = this.find(id);
 			if (!current || current.status !== 'checking') return;
 			if (exists) this.patch(id, { status: 'conflict', clash: 'folder' });
@@ -196,8 +206,10 @@ export class UploadDialog {
 			}
 		} catch (error) {
 			if (this.dead) return;
+
 			const current = this.find(id);
 			if (!current || current.status !== 'checking') return;
+
 			this.patch(id, { status: 'error', error: classifyS3Error(error).kind });
 		} finally {
 			this.notify();
@@ -208,11 +220,13 @@ export class UploadDialog {
 		try {
 			const name = await this.freeName(item);
 			if (this.dead || this.find(item.id)?.status !== 'checking') return;
+
 			this.claimed.add(name);
 			this.patch(item.id, { name, status: 'ready', clash: null });
 			this.pump();
 		} catch (error) {
 			if (this.dead) return;
+
 			const kind = error instanceof NameError ? 'badName' : classifyS3Error(error).kind;
 			this.patch(item.id, { status: 'error', error: kind });
 		} finally {
@@ -238,6 +252,7 @@ export class UploadDialog {
 
 	private pump(): void {
 		if (this.dead) return;
+
 		for (const item of this.items()) {
 			if (this.active >= 2) return;
 			if (item.status !== 'ready' || this.started.has(item.id)) continue;
@@ -257,6 +272,7 @@ export class UploadDialog {
 			this.patch(item.id, { status: 'error', error: 'demo', progress: 0 });
 			return;
 		}
+
 		const controller = new AbortController();
 		this.controllers.add(controller);
 		try {
@@ -271,9 +287,11 @@ export class UploadDialog {
 				controller.signal,
 			);
 			if (controller.signal.aborted || this.dead) return;
+
 			this.patch(item.id, { status: 'done', progress: 100, error: null });
 		} catch (error) {
 			if (controller.signal.aborted || isCancel(error) || this.dead) return;
+
 			this.started.delete(item.id);
 			this.patch(item.id, {
 				status: 'error',
@@ -287,8 +305,10 @@ export class UploadDialog {
 
 	private notify(): void {
 		if (this.dead || this.busy()) return;
+
 		const done = this.items().filter((item) => item.status === 'done').length;
 		if (!done || done === this.notified) return;
+
 		this.notified = done;
 		this.uploaded.emit();
 	}
@@ -315,5 +335,6 @@ function safeFileName(name: string): string | null {
 	const trimmed = name.trim();
 	if (!trimmed || trimmed.length > 240) return null;
 	if (/[\\/\0]/.test(trimmed) || trimmed === '.' || trimmed === '..') return null;
+
 	return trimmed;
 }

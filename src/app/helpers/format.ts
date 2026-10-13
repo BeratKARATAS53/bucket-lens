@@ -36,6 +36,7 @@ export function extensionOf(name: string): string {
 	const base = name.split('/').pop() ?? name;
 	const dot = base.lastIndexOf('.');
 	if (dot <= 0) return '';
+
 	return base.slice(dot + 1).toLowerCase();
 }
 
@@ -51,11 +52,13 @@ export function matchesFilter(entry: BucketEntry, filter: KindFilter): boolean {
 	if (filter === 'all') return true;
 	if (filter === 'folders') return entry.kind === 'folder';
 	if (entry.kind === 'folder') return false;
+
 	return fileKind(entry.name) === FILTER_TO_KIND[filter];
 }
 
 export function kindLabel(entry: BucketEntry, t: Dictionary): string {
 	if (entry.kind === 'folder') return t.kindFolder;
+
 	switch (fileKind(entry.name)) {
 		case 'image':
 			return t.kindImage;
@@ -88,6 +91,7 @@ export function messageForError(kind: S3ErrorKind, t: Dictionary): string {
 
 export function formatBytes(bytes: number | null, lang: Lang): string {
 	if (bytes == null || Number.isNaN(bytes)) return '-';
+
 	const units = ['B', 'KB', 'MB', 'GB', 'TB'];
 	let value = bytes;
 	let unit = 0;
@@ -105,6 +109,7 @@ export function formatBytes(bytes: number | null, lang: Lang): string {
 
 export function formatExact(bytes: number | null, lang: Lang): string {
 	if (bytes == null || Number.isNaN(bytes)) return '-';
+
 	const formatted = new Intl.NumberFormat(locale(lang)).format(bytes);
 	return lang === 'tr' ? `${formatted} bayt` : `${formatted} bytes`;
 }
@@ -112,6 +117,7 @@ export function formatExact(bytes: number | null, lang: Lang): string {
 export function formatCount(count: number, lang: Lang): string {
 	const formatted = new Intl.NumberFormat(locale(lang)).format(count);
 	if (lang === 'tr') return `${formatted} öğe`;
+
 	return count === 1 ? '1 item' : `${formatted} items`;
 }
 
@@ -122,8 +128,10 @@ export function formatScanned(count: number, lang: Lang): string {
 
 export function formatDate(value: string | null, lang: Lang, style: 'short' | 'full'): string {
 	if (!value) return '-';
+
 	const date = new Date(value);
 	if (Number.isNaN(date.getTime())) return '-';
+
 	return new Intl.DateTimeFormat(
 		locale(lang),
 		style === 'short'
@@ -149,6 +157,7 @@ export function sortEntries(
 	const collator = new Intl.Collator(locale(lang), { sensitivity: 'base', numeric: true });
 	return [...entries].sort((a, b) => {
 		if (a.kind !== b.kind) return a.kind === 'folder' ? -1 : 1;
+
 		let compared = 0;
 		if (key === 'size') compared = (a.size ?? -1) - (b.size ?? -1);
 		else if (key === 'modified')
