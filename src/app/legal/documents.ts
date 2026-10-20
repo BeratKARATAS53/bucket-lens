@@ -42,7 +42,7 @@ const tr: Record<LegalId, LegalDocument> = {
 			},
 			{
 				heading: 'Hangi veri işlenir',
-				body: 'Site ad, e-posta, kova adı ve gizli anahtar toplamaz. Dil ile açık ya da koyu görünüm tarayıcının yerel deposunda kalır. Kurulu uygulamada kova adı, bölge, anahtar kimliği, FTP adresi ve gizli anahtar ya da parola bu bilgisayarda durur.',
+				body: 'Tanıtım sayfası ad, e-posta, kova adı ve gizli anahtar toplamaz. Orada seçilen dil ve görünüm bu cihazda hatırlanır. Kurulu uygulamada kova adı, bölge, anahtar kimliği, FTP adresi ve gizli anahtar ya da parola bu bilgisayarda durur.',
 			},
 			{
 				heading: 'Amaç',
@@ -54,7 +54,7 @@ const tr: Record<LegalId, LegalDocument> = {
 			},
 			{
 				heading: 'Hakların',
-				body: 'KVKK’nın 11. maddesi erişme, düzeltme, silme ve itirazı kapsar. Dil ve görünüm kaydını, tarayıcıda bu sitenin verisini temizleyerek silebilirsin.',
+				body: 'KVKK’nın 11. maddesi erişme, düzeltme, silme ve itirazı kapsar. Tanıtım sayfasındaki dil ve görünüm kaydını, o sayfanın bu cihazdaki verisini temizleyerek silebilirsin.',
 			},
 		],
 	},
@@ -68,7 +68,7 @@ const tr: Record<LegalId, LegalDocument> = {
 			},
 			{
 				heading: 'Dil, görünüm ve çerez',
-				body: 'Seçtiğin dil ile açık ya da koyu görünüm tarayıcının yerel deposunda durur. Sitede çerez, reklam veya ziyaret ölçümü yoktur.',
+				body: 'Tanıtım sayfasında seçtiğin dil ile açık ya da koyu görünüm bu cihazda durur. Tanıtım sayfasında çerez, reklam veya ziyaret ölçümü yoktur.',
 			},
 			{
 				heading: 'Uygulama',
@@ -133,7 +133,7 @@ const en: Record<LegalId, LegalDocument> = {
 			},
 			{
 				heading: 'What is processed',
-				body: 'The site does not collect your name, email, bucket name, or secret key. Language and light or dark theme stay in the browser’s local storage. In the installed app, the bucket name, region, key id, FTP address, and secret key or password stay on this computer.',
+				body: 'The landing page does not collect your name, email, bucket name, or secret key. Language and theme chosen there are remembered on this device. In the installed app, the bucket name, region, key id, FTP address, and secret key or password stay on this computer.',
 			},
 			{
 				heading: 'Purpose',
@@ -145,7 +145,7 @@ const en: Record<LegalId, LegalDocument> = {
 			},
 			{
 				heading: 'Your rights',
-				body: 'Article 11 of the KVKK covers access, correction, deletion, and objection. You can remove the language and theme record by clearing this site’s data in your browser.',
+				body: 'Article 11 of the KVKK covers access, correction, deletion, and objection. You can remove the language and theme record by clearing the landing page data stored on this device.',
 			},
 		],
 	},
@@ -159,7 +159,7 @@ const en: Record<LegalId, LegalDocument> = {
 			},
 			{
 				heading: 'Language, theme, and cookies',
-				body: 'Your language and light or dark theme stay in the browser’s local storage. The site does not use cookies, ads, or visit measurement.',
+				body: 'Your language and light or dark theme on the landing page stay on this device. The landing page does not use cookies, ads, or visit measurement.',
 			},
 			{
 				heading: 'The app',

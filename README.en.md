@@ -2,7 +2,7 @@
 
 [Türkçe](README.md) · **English**
 
-A desktop app for the files in a Backblaze B2, Wasabi, Amazon S3, or FTP bucket. It opens folders, searches by name, filters by type, and downloads a file. Details open in a window. The interface is in Turkish and English, with a light and a dark appearance.
+A desktop app for files in Backblaze B2, Wasabi, Amazon S3, Cloudflare R2, DigitalOcean Spaces, MinIO, or FTP buckets. Folder summary, search, type filters, and download stay on one screen. You can give each saved key an optional name. The interface is in Turkish and English, with light and dark appearance.
 
 The key stays on this computer.
 
@@ -12,7 +12,7 @@ Welcome. The bucket opens from here when there is no key yet.
 
 ![Welcome screen](docs/en/welcome.png)
 
-With a bucket open, folders, search, the subfolder scan, and the type filters stay on the same screen.
+With a bucket open, the folder summary, search, subfolder scan, and type filters stay on the same screen.
 
 ![File list](docs/en/list.png)
 
@@ -20,9 +20,11 @@ Clicking a file shows its size, date, storage class, and content type in a windo
 
 ![File details](docs/en/detail.png)
 
-Keys live in the panel that opens from the right. A new key starts by choosing a provider. The region and endpoint fill in from that choice. Leave the secret field empty when a stored secret should stay as it is.
+Keys live in the panel that opens from the right. You can name a connection. A new key starts by choosing a provider; R2, Spaces, and MinIO are in the list. The region and endpoint fill in from that choice. Leave the secret field empty when a stored secret should stay as it is.
 
 ![Connection settings](docs/en/connection.png)
+
+To refresh the screenshots: `pnpm screenshots` (runs a production build first and uses an empty temporary key store).
 
 ## Download
 

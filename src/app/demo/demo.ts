@@ -1,5 +1,5 @@
 import { Injectable, InjectionToken } from '@angular/core';
-import { BucketEntry, ConnectionView, ListPage, ObjectMeta } from '../models/bucket';
+import { BucketEntry, BucketStats, ConnectionView, ListPage, ObjectMeta } from '../models/bucket';
 import { BucketService } from '../services/bucket.service';
 import { ConnectionService } from '../services/connection.service';
 
@@ -7,6 +7,7 @@ export const DEMO_MODE = new InjectionToken<boolean>('DEMO_MODE');
 
 const demoConnection: ConnectionView = {
 	id: 'demo',
+	name: 'Demo kova',
 	provider: 's3',
 	region: 'eu-central-1',
 	endpoint: 'demo.bucketlens.local',
@@ -122,6 +123,10 @@ export class DemoBucketService extends BucketService {
 		return { entries, nextToken: null, scanned: entries.length };
 	}
 
+	override async stats(prefix: string): Promise<BucketStats> {
+		return aggregateStats(prefix);
+	}
+
 	override async meta(key: string): Promise<ObjectMeta> {
 		const file = files.find((item) => item.key === key);
 		return {
@@ -197,4 +202,20 @@ function folderEntry(key: string, prefix: string): BucketEntry {
 function nameOf(relative: string): string {
 	const parts = relative.split('/').filter(Boolean);
 	return parts.at(-1) || relative;
+}
+
+function aggregateStats(prefix: string): BucketStats {
+	let fileCount = 0;
+	let totalBytes = 0;
+	let lastModified: string | null = null;
+	for (const file of files) {
+		if (!file.key.startsWith(prefix)) continue;
+
+		fileCount += 1;
+		totalBytes += file.size;
+		if (!lastModified || file.lastModified.localeCompare(lastModified) > 0) {
+			lastModified = file.lastModified;
+		}
+	}
+	return { fileCount, totalBytes, lastModified };
 }

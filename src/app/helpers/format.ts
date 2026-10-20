@@ -126,6 +126,52 @@ export function formatScanned(count: number, lang: Lang): string {
 	return lang === 'tr' ? `${formatted} nesne tarandı` : `${formatted} objects scanned`;
 }
 
+export function sharePercent(part: number, total: number | null | undefined): number {
+	if (total == null || total <= 0) return 0;
+
+	return Math.min(100, Math.max(0, Math.round((part / total) * 100)));
+}
+
+export function formatStatsShareCount(part: number, total: number, lang: Lang): string {
+	const pct = sharePercent(part, total);
+	const totalFmt = new Intl.NumberFormat(locale(lang)).format(total);
+	if (lang === 'tr') return `Toplam ${totalFmt} öğenin %${pct}'i`;
+
+	return `${pct}% of ${totalFmt} items`;
+}
+
+export function formatStatsShareBytes(part: number, total: number, lang: Lang): string {
+	const pct = sharePercent(part, total);
+	const totalLabel = formatBytes(total, lang);
+	if (lang === 'tr') return `Toplam ${totalLabel} içinde %${pct}`;
+
+	return `${pct}% of ${totalLabel} total`;
+}
+
+export function formatRelativePast(value: string | null, lang: Lang): string {
+	if (!value) return '-';
+
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return '-';
+
+	const diffSec = Math.round((date.getTime() - Date.now()) / 1000);
+	const rtf = new Intl.RelativeTimeFormat(locale(lang), { numeric: 'auto' });
+	const absSec = Math.abs(diffSec);
+	const units: [Intl.RelativeTimeFormatUnit, number][] = [
+		['year', 60 * 60 * 24 * 365],
+		['month', 60 * 60 * 24 * 30],
+		['week', 60 * 60 * 24 * 7],
+		['day', 60 * 60 * 24],
+		['hour', 60 * 60],
+		['minute', 60],
+		['second', 1],
+	];
+	for (const [unit, seconds] of units) {
+		if (absSec >= seconds) return rtf.format(Math.round(diffSec / seconds), unit);
+	}
+	return rtf.format(0, 'second');
+}
+
 export function formatDate(value: string | null, lang: Lang, style: 'short' | 'full'): string {
 	if (!value) return '-';
 

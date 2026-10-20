@@ -236,6 +236,75 @@ button:not(:disabled),
 	transform: translateX(1rem);
 }
 
+.stats-row {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 0.625rem;
+}
+
+@media (max-width: 640px) {
+	.stats-row {
+		grid-template-columns: 1fr;
+	}
+}
+
+.stats-cell {
+	min-width: 0;
+	padding: 0.875rem 1rem;
+	border-radius: 1rem;
+	background: var(--sunken);
+}
+
+.stats-cell-skeleton {
+	min-height: 6.5rem;
+}
+
+.stats-cell-label {
+	margin: 0;
+	font-size: 0.6875rem;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+
+.stats-value {
+	margin: 0.375rem 0 0;
+	font-size: 1.375rem;
+	font-weight: 600;
+	line-height: 1.2;
+	color: var(--ink);
+}
+
+.stats-meter {
+	margin-top: 0.625rem;
+	height: 0.25rem;
+	overflow: hidden;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--line) 65%, transparent);
+}
+
+.stats-meter-fill {
+	height: 100%;
+	border-radius: 999px;
+	transition: width 0.35s ease;
+}
+
+.stats-meter-fill-count {
+	background: var(--accent);
+}
+
+.stats-meter-fill-size {
+	background: var(--ok);
+}
+
+.stats-hint {
+	margin: 0.375rem 0 0;
+	font-size: 0.6875rem;
+	line-height: 1.35;
+	color: var(--muted);
+}
+
 .key-card {
 	min-height: 10.5rem;
 	border: 2px solid var(--line);
@@ -245,6 +314,10 @@ button:not(:disabled),
 
 .key-card.is-active {
 	border-color: var(--accent);
+}
+
+.key-card.has-alert {
+	border-color: color-mix(in srgb, var(--danger) 55%, var(--line));
 }
 
 .key-card.is-add {

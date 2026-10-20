@@ -1,13 +1,15 @@
 ## Türkçe
 
-- Kayıtlı sunucular arasında dosya kopyalama eklendi. Dosya ayrıntısındaki butonla hedef sunucu ve yol seçilir. Kaynakta okuma, hedefte yazma izni kontrol edilir. 1 GB üstü kopyalanmaz.
-- Aynı uç noktadaki S3 kovaları sunucu tarafında kopyalanır. FTP ve farklı sağlayıcılar arasında dosya bu bilgisayardan geçer. Hedefte aynı yol varsa üzerine yazmak ayrıca onaylanır. Kopyalama bitene kadar pencere açık kalır.
-- Süreli bağlantı oluşturma sorunu giderildi.
+- Açık klasör için özet kartı eklendi: dosya sayısı, boyut ve son değişiklik; kovaya göre pay çubuğu.
+- Kayıtlı bağlantılara isteğe bağlı isim verilebilir.
+- Cloudflare R2, DigitalOcean Spaces ve MinIO sağlayıcıları eklendi.
+- Anahtar listesinde seçim başarısız olursa hata ilgili kartta gösterilir; geçersiz anahtar etkinleştirilmez.
 
 ---
 
 ## English
 
-- Copying a file between saved servers was added. The button in the file details picks the destination server and path. Reading is checked on the source, and writing on the destination. Files over 1 GB are not copied.
-- S3 buckets on the same endpoint are copied on the server. Between FTP and different providers, the file passes through this computer. If that path is already on the destination, overwriting asks for confirmation. The window stays open until the copy finishes.
-- The issue with the presigned URL has been resolved.
+- A folder summary card was added for the open folder: file count, size, and last change, with share bars against the whole bucket.
+- Saved connections can have an optional display name.
+- Cloudflare R2, DigitalOcean Spaces, and MinIO providers were added.
+- If selecting a key fails, the error appears on that card and the invalid key is not activated.

@@ -2,7 +2,7 @@
 
 **Türkçe** · [English](README.en.md)
 
-Backblaze B2, Wasabi, Amazon S3 ve FTP kovalarındaki dosyalara bakmak için masaüstü uygulaması. Klasörleri açar, ada göre arar, türe göre süzer, dosyayı indirir. Ayrıntı pencerede açılır. Arayüz Türkçe ve İngilizcedir. Açık ve koyu görünüm vardır.
+Backblaze B2, Wasabi, Amazon S3, Cloudflare R2, DigitalOcean Spaces, MinIO ve FTP kovalarındaki dosyalara bakmak için masaüstü uygulaması. Klasör özeti, arama, tür süzgeçleri ve indirme tek ekranda. Anahtarlara isteğe bağlı isim verilir. Arayüz Türkçe ve İngilizcedir. Açık ve koyu görünüm vardır.
 
 Anahtar bu bilgisayarda kalır.
 
@@ -12,7 +12,7 @@ Karşılama. Anahtar henüz yokken kova buradan açılır.
 
 ![Karşılama ekranı](docs/karsilama.png)
 
-Kova açıkken klasörler, arama, alt klasör taraması ve tür süzgeçleri aynı ekranda durur.
+Kova açıkken klasör özeti, arama, alt klasör taraması ve tür süzgeçleri aynı ekranda durur.
 
 ![Dosya listesi](docs/liste.png)
 
@@ -20,9 +20,11 @@ Bir dosyaya tıklanınca boyut, tarih, depolama sınıfı ve içerik türü penc
 
 ![Dosya ayrıntısı](docs/ayrinti.png)
 
-Anahtarlar sağdan açılan panelde tutulur. Yeni anahtarda sağlayıcı seçilir. Bölge ve uç nokta ona göre dolar. Kayıtlı gizli anahtarı değiştirmek istemezsen alan boş bırakılır.
+Anahtarlar sağdan açılan panelde tutulur. Bağlantıya isim verebilirsin. Yeni anahtarda sağlayıcı seçilir; R2, Spaces ve MinIO da listede. Bölge ve uç nokta ona göre dolar. Kayıtlı gizli anahtarı değiştirmek istemezsen alan boş bırakılır.
 
 ![Bağlantı ayarı](docs/baglanti.png)
+
+Ekran görüntülerini yenilemek için: `pnpm screenshots` (önce production derlemesi yapılır, anahtar deposu boş bir geçici klasör kullanılır).
 
 ## İndirme
 

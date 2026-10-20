@@ -12,6 +12,7 @@ import {
 	headObject,
 	isObjectKey,
 	listObjects,
+	objectStats,
 	openDownload,
 	presignObject,
 	putObject,
@@ -91,6 +92,15 @@ export function startServer({
 				if (signal.aborted) return;
 
 				send(res, 200, page);
+				return;
+			}
+			if (req.method === 'GET' && url.pathname === '/api/objects/stats') {
+				const prefix = url.searchParams.get('prefix') ?? '';
+				const signal = clientSignal(res);
+				const stats = await objectStats(await requireConnection(store), prefix, signal);
+				if (signal.aborted) return;
+
+				send(res, 200, stats);
 				return;
 			}
 			if (req.method === 'GET' && url.pathname === '/api/objects/meta') {
@@ -264,7 +274,7 @@ export function startServer({
 async function saveConnection(store, body) {
 	const provider = text(body.provider);
 	const ftp = provider === 'ftp';
-	if (!ftp && provider !== 'backblaze' && provider !== 'wasabi' && provider !== 's3') {
+	if (!ftp && !isS3Provider(provider)) {
 		throw new HttpError(400, 'InvalidConnection', 'Connection fields are incomplete');
 	}
 	const endpoint = ftp ? normalizeFtpHost(body.endpoint) : normalizeEndpoint(text(body.endpoint));
@@ -290,8 +300,10 @@ async function saveConnection(store, body) {
 	}
 	if (!secretAccessKey && !ftp) throw new HttpError(400, 'MissingSecret', 'Secret is required');
 
+	const name = text(body.name);
 	const connection = {
 		id: current?.id ?? randomUUID(),
+		...(name ? { name } : {}),
 		provider,
 		region: ftp ? String(ftpPort(region)) : region,
 		endpoint,
@@ -312,9 +324,10 @@ async function saveConnection(store, body) {
 async function activateConnection(store, body) {
 	const id = text(body.id);
 	const saved = await store.readStore();
-	if (!saved.connections.some((item) => item.id === id)) {
-		throw new HttpError(404, 'NotFound', 'Connection was not found');
-	}
+	const connection = saved.connections.find((item) => item.id === id);
+	if (!connection) throw new HttpError(404, 'NotFound', 'Connection was not found');
+
+	await listObjects(connection, '', null, true, 1);
 	saved.activeId = id;
 	await store.writeStore(saved);
 	return publicStore(saved);
@@ -369,6 +382,12 @@ function clampKeys(value) {
 	if (!Number.isFinite(parsed)) return 200;
 
 	return Math.min(1000, Math.max(1, Math.trunc(parsed)));
+}
+
+const S3_PROVIDERS = new Set(['backblaze', 'wasabi', 's3', 'r2', 'spaces', 'minio']);
+
+function isS3Provider(provider) {
+	return S3_PROVIDERS.has(provider);
 }
 
 const PRESIGN_MINUTES = new Set([5, 10, 15, 30, 60, 90, 120]);

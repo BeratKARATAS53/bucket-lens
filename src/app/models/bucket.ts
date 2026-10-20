@@ -1,6 +1,7 @@
 export interface ConnectionView {
 	id: string;
-	provider: 'backblaze' | 'wasabi' | 's3' | 'ftp';
+	name?: string;
+	provider: 'backblaze' | 'wasabi' | 's3' | 'r2' | 'spaces' | 'minio' | 'ftp';
 	region: string;
 	endpoint: string;
 	bucket: string;
@@ -16,13 +17,20 @@ export interface ConnectionList {
 
 export interface ConnectionDraft {
 	id?: string;
-	provider: 'backblaze' | 'wasabi' | 's3' | 'ftp';
+	name?: string;
+	provider: 'backblaze' | 'wasabi' | 's3' | 'r2' | 'spaces' | 'minio' | 'ftp';
 	region: string;
 	endpoint: string;
 	bucket: string;
 	accessKeyId: string;
 	secretAccessKey: string;
 	secure?: boolean;
+}
+
+export interface BucketStats {
+	fileCount: number;
+	totalBytes: number;
+	lastModified: string | null;
 }
 
 export interface BucketEntry {

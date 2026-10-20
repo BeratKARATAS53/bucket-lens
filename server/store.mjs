@@ -13,7 +13,7 @@ export function defaultConnectionPath() {
 
 export function createConnectionStore({
 	filePath = defaultConnectionPath(),
-	keystore = createKeystore(),
+	keystore = createKeystore({ secretsFile: join(dirname(filePath), 'secrets.json') }),
 } = {}) {
 	return {
 		connectionPath: () => filePath,
@@ -105,6 +105,9 @@ export function publicStore(store) {
 export function publicConnection(connection) {
 	return {
 		id: connection.id,
+		...(typeof connection.name === 'string' && connection.name.trim()
+			? { name: connection.name.trim() }
+			: {}),
 		provider: connection.provider,
 		region: connection.region,
 		endpoint: connection.endpoint,
@@ -118,6 +121,9 @@ export function publicConnection(connection) {
 function persistedConnection(connection) {
 	return {
 		id: connection.id,
+		...(typeof connection.name === 'string' && connection.name.trim()
+			? { name: connection.name.trim() }
+			: {}),
 		provider: connection.provider,
 		region: connection.region,
 		endpoint: connection.endpoint,
@@ -130,8 +136,14 @@ function persistedConnection(connection) {
 function normalizeConnection(value) {
 	const provider = typeof value.provider === 'string' ? value.provider.trim() : '';
 	return {
+		...(typeof value.name === 'string' && value.name.trim() ? { name: value.name.trim() } : {}),
 		provider:
-			provider === 'wasabi' || provider === 's3' || provider === 'ftp'
+			provider === 'wasabi' ||
+			provider === 's3' ||
+			provider === 'r2' ||
+			provider === 'spaces' ||
+			provider === 'minio' ||
+			provider === 'ftp'
 				? provider
 				: 'backblaze',
 		region: value.region.trim(),

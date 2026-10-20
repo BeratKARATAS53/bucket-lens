@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { isAxiosError } from 'axios';
 import { Lang } from '../helpers/i18n';
-import { KindFilter, ListPage, ObjectMeta } from '../models/bucket';
+import { BucketStats, KindFilter, ListPage, ObjectMeta } from '../models/bucket';
 import { api } from './api';
 
 export interface PresignLink {
@@ -54,6 +54,14 @@ export class BucketService {
 				kind: filter && filter.kind !== 'all' ? filter.kind : undefined,
 				lang: filter?.lang,
 			},
+			signal,
+		});
+		return data;
+	}
+
+	async stats(prefix: string, signal?: AbortSignal): Promise<BucketStats> {
+		const { data } = await api.get<BucketStats>('/objects/stats', {
+			params: { prefix },
 			signal,
 		});
 		return data;

@@ -20,8 +20,10 @@ export class ConnectionService {
 
 	async save(draft: ConnectionDraft): Promise<void> {
 		const ftp = draft.provider === 'ftp';
+		const name = draft.name?.trim() ?? '';
 		const { data } = await api.put<ConnectionList>('/connection', {
 			id: draft.id,
+			...(name ? { name } : {}),
 			provider: draft.provider,
 			region: draft.region.trim(),
 			endpoint: normalizeEndpoint(draft.endpoint),

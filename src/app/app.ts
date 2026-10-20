@@ -19,14 +19,18 @@ import {
 	formatBytes,
 	formatCount,
 	formatDate,
+	formatRelativePast,
 	formatScanned,
+	formatStatsShareBytes,
+	formatStatsShareCount,
 	kindLabel,
+	sharePercent,
 	matchesFilter,
 	messageForError,
 	sortEntries,
 } from './helpers/format';
 import { connectionMeta, connectionTitle, providerLabelKey } from './helpers/regions';
-import { BucketEntry, KindFilter, S3Failure, SortKey } from './models/bucket';
+import { BucketEntry, BucketStats, KindFilter, S3Failure, SortKey } from './models/bucket';
 import { DetailDialog } from './components/detail-dialog';
 import { Icon, iconForEntry } from './components/icon';
 import { SettingsDialog } from './components/settings-dialog';
@@ -56,8 +60,12 @@ export class App {
 	protected readonly iconFor = iconForEntry;
 	protected readonly formatBytes = formatBytes;
 	protected readonly formatDate = formatDate;
+	protected readonly formatRelativePast = formatRelativePast;
 	protected readonly formatCount = formatCount;
 	protected readonly formatScanned = formatScanned;
+	protected readonly formatStatsShareCount = formatStatsShareCount;
+	protected readonly formatStatsShareBytes = formatStatsShareBytes;
+	protected readonly sharePercent = sharePercent;
 	protected readonly kindLabel = kindLabel;
 	protected readonly messageForError = messageForError;
 	protected readonly downloadPercent = downloadPercent;
@@ -94,6 +102,9 @@ export class App {
 	protected readonly scanned = signal(0);
 	protected readonly error = signal<S3Failure | null>(null);
 	protected readonly update = signal<{ version: string; url: string } | null>(null);
+	protected readonly folderStats = signal<BucketStats | null>(null);
+	protected readonly bucketStats = signal<BucketStats | null>(null);
+	protected readonly statsLoading = signal(false);
 
 	private readonly appliedQuery = signal('');
 	protected readonly searchMode = computed(() =>
@@ -143,6 +154,9 @@ export class App {
 	private readonly searchBox = viewChild<ElementRef<HTMLInputElement>>('searchBox');
 	private generation = 0;
 	private listAbort: AbortController | null = null;
+	private statsAbort: AbortController | null = null;
+	private statsGeneration = 0;
+	private bucketStatsFor: string | null = null;
 	private queryTimer: ReturnType<typeof setTimeout> | null = null;
 	private uploadRefresh: ReturnType<typeof setTimeout> | null = null;
 	private activeConnectionId: string | null | undefined = undefined;
@@ -173,6 +187,9 @@ export class App {
 				this.kind.set('all');
 				this.uploadOpen.set(false);
 				this.dragging.set(false);
+				this.folderStats.set(null);
+				this.bucketStats.set(null);
+				this.bucketStatsFor = null;
 			});
 		});
 		effect(() => {
@@ -186,11 +203,20 @@ export class App {
 				void this.reload(true);
 			});
 		});
+		effect(() => {
+			const prefix = this.prefix();
+			const cfg = this.store.config();
+			const ready = this.store.ready();
+			untracked(() => {
+				void this.refreshStats(prefix, cfg?.id ?? null, ready);
+			});
+		});
 		inject(DestroyRef).onDestroy(() => {
 			document.body.style.overflow = '';
 			if (this.queryTimer) clearTimeout(this.queryTimer);
 			if (this.uploadRefresh) clearTimeout(this.uploadRefresh);
 			this.listAbort?.abort();
+			this.statsAbort?.abort();
 		});
 	}
 
@@ -321,7 +347,13 @@ export class App {
 	}
 
 	protected refresh(): void {
+		this.bucketStatsFor = null;
 		void this.reload(true);
+		void this.refreshStats(
+			this.prefix(),
+			this.store.config()?.id ?? null,
+			this.store.ready(),
+		);
 	}
 
 	protected openUpload(): void {
@@ -332,7 +364,9 @@ export class App {
 		if (this.uploadRefresh) clearTimeout(this.uploadRefresh);
 		this.uploadRefresh = setTimeout(() => {
 			this.uploadRefresh = null;
+			this.bucketStatsFor = null;
 			void this.reload(true);
+			void this.refreshStats(this.prefix(), this.store.config()?.id ?? null, this.store.ready());
 		}, 400);
 	}
 
@@ -395,6 +429,46 @@ export class App {
 		this.uploadFiles.set(files);
 		this.uploadBatch.update((value) => value + 1);
 		this.uploadOpen.set(true);
+	}
+
+	private async refreshStats(
+		prefix: string,
+		connectionId: string | null,
+		ready: boolean,
+	): Promise<void> {
+		if (!ready || !connectionId) {
+			this.folderStats.set(null);
+			this.bucketStats.set(null);
+			this.statsLoading.set(false);
+			return;
+		}
+
+		const id = ++this.statsGeneration;
+		this.statsAbort?.abort();
+		const abort = new AbortController();
+		this.statsAbort = abort;
+		this.statsLoading.set(true);
+		this.folderStats.set(null);
+
+		try {
+			const folder = await this.bucket.stats(prefix, abort.signal);
+			if (id !== this.statsGeneration || abort.signal.aborted) return;
+
+			this.folderStats.set(folder);
+			if (this.bucketStatsFor !== connectionId || !this.bucketStats()) {
+				const bucket = await this.bucket.stats('', abort.signal);
+				if (id !== this.statsGeneration || abort.signal.aborted) return;
+
+				this.bucketStats.set(bucket);
+				this.bucketStatsFor = connectionId;
+			}
+		} catch {
+			if (id !== this.statsGeneration || abort.signal.aborted) return;
+
+			this.folderStats.set(null);
+		} finally {
+			if (id === this.statsGeneration) this.statsLoading.set(false);
+		}
 	}
 
 	private async reload(reset: boolean): Promise<void> {

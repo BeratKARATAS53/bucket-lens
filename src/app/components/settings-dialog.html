@@ -44,6 +44,7 @@
 					<div
 						class="key-card flex cursor-pointer flex-col p-4 text-left"
 						[class.is-active]="item.id === activeId"
+						[class.has-alert]="cardAlert()?.id === item.id"
 						(click)="choose(item)"
 					>
 						<div class="flex items-start justify-between gap-3">
@@ -51,6 +52,11 @@
 								<p class="truncate text-lg font-semibold">
 									{{ connectionTitle(item) }}
 								</p>
+								@if (item.name?.trim()) {
+									<p class="mt-0.5 truncate text-sm text-muted">
+										{{ item.provider === 'ftp' ? item.endpoint : item.bucket }}
+									</p>
+								}
 								<p class="mt-1 text-sm text-muted">
 									{{ t[providerLabelKey(item.provider)] }}
 									@if (connectionMeta(item) !== connectionTitle(item)) {
@@ -67,6 +73,18 @@
 								}}</span>
 							}
 						</div>
+						@if (cardAlert()?.id === item.id) {
+							<div
+								class="mt-3 rounded-xl bg-danger-soft px-3 py-2.5 text-sm text-danger"
+								role="alert"
+								(click)="$event.stopPropagation()"
+							>
+								<p>{{ cardErrorText(item.id, t) }}</p>
+								@if (cardErrorCode(item.id); as code) {
+									<p class="mt-1 font-mono text-xs">{{ code }}</p>
+								}
+							</div>
+						}
 						<div class="mt-auto flex gap-2 pt-4">
 							<button
 								type="button"
@@ -100,17 +118,6 @@
 					<app-icon name="plus" class="size-5" />
 					{{ t.addConnection }}
 				</div>
-				@if (formError(); as error) {
-					<div
-						class="rounded-2xl bg-danger-soft px-4 py-3 text-sm text-danger"
-						role="alert"
-					>
-						<p>{{ errorText(t) }}</p>
-						@if (error.code) {
-							<p class="mt-1 font-mono text-xs">{{ error.code }}</p>
-						}
-					</div>
-				}
 			</div>
 		} @else {
 			<form
@@ -118,6 +125,24 @@
 				(submit)="save($event)"
 				autocomplete="off"
 			>
+				<label class="block">
+					<span class="label">{{ t.connectionName }}</span>
+					<input
+						class="field"
+						name="name"
+						[value]="draftValue.name ?? ''"
+						(input)="onName($event)"
+						autocomplete="off"
+						spellcheck="false"
+						[attr.placeholder]="
+							draftValue.provider === 'ftp'
+								? draftValue.endpoint || t.ftpHost
+								: draftValue.bucket || t.bucket
+						"
+					/>
+					<span class="mt-1 block text-xs text-muted">{{ t.connectionNameHint }}</span>
+				</label>
+
 				<label class="block">
 					<span class="label">{{ t.provider }}</span>
 					<select

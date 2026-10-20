@@ -63,6 +63,7 @@ export class SettingsDialog {
 	protected readonly saving = signal(false);
 	protected readonly confirmDeleteId = signal<string | null>(null);
 	protected readonly formError = signal<S3Failure | null>(null);
+	protected readonly cardAlert = signal<{ id: string; error: S3Failure } | null>(null);
 	protected readonly suggestion = computed(() =>
 		this.draft().provider === 'backblaze' ? regionFromKeyId(this.draft().accessKeyId) : null,
 	);
@@ -136,11 +137,26 @@ export class SettingsDialog {
 		return error ? messageForError(error.kind, t) : '';
 	}
 
+	protected cardErrorText(id: string, t: Dictionary): string {
+		const alert = this.cardAlert();
+		if (!alert || alert.id !== id) return '';
+
+		return messageForError(alert.error.kind, t);
+	}
+
+	protected cardErrorCode(id: string): string | null {
+		const alert = this.cardAlert();
+		if (!alert || alert.id !== id) return null;
+
+		return alert.error.code;
+	}
+
 	protected openCreate(): void {
 		this.editing.set(null);
 		this.regionLocked.set(false);
 		this.submitted.set(false);
 		this.formError.set(null);
+		this.cardAlert.set(null);
 		this.showSecret.set(false);
 		this.confirmDeleteId.set(null);
 		this.draft.set(emptyDraft());
@@ -153,10 +169,12 @@ export class SettingsDialog {
 		this.regionLocked.set(true);
 		this.submitted.set(false);
 		this.formError.set(null);
+		this.cardAlert.set(null);
 		this.showSecret.set(false);
 		this.confirmDeleteId.set(null);
 		this.draft.set({
 			id: item.id,
+			name: item.name ?? '',
 			provider: item.provider,
 			region: item.region,
 			endpoint: item.endpoint,
@@ -171,6 +189,7 @@ export class SettingsDialog {
 	protected back(): void {
 		this.submitted.set(false);
 		this.formError.set(null);
+		this.cardAlert.set(null);
 		this.screen.set('list');
 	}
 
@@ -179,11 +198,12 @@ export class SettingsDialog {
 		if (this.saving() || this.store.config()?.id === item.id) return;
 
 		this.saving.set(true);
-		this.formError.set(null);
+		this.cardAlert.set(null);
 		try {
 			await this.store.activate(item.id);
+			if (this.alive) this.cardAlert.set(null);
 		} catch (error) {
-			if (this.alive) this.formError.set(classifyS3Error(error));
+			if (this.alive) this.cardAlert.set({ id: item.id, error: classifyS3Error(error) });
 		} finally {
 			if (this.alive) this.saving.set(false);
 		}
@@ -198,6 +218,7 @@ export class SettingsDialog {
 		}
 
 		this.saving.set(true);
+		this.cardAlert.set(null);
 		this.formError.set(null);
 		try {
 			await this.store.remove(item.id);
@@ -206,10 +227,16 @@ export class SettingsDialog {
 			this.confirmDeleteId.set(null);
 			if (!this.store.connections().length) this.openCreate();
 		} catch (error) {
-			if (this.alive) this.formError.set(classifyS3Error(error));
+			if (this.alive) {
+				this.cardAlert.set({ id: item.id, error: classifyS3Error(error) });
+			}
 		} finally {
 			if (this.alive) this.saving.set(false);
 		}
+	}
+
+	protected onName(event: Event): void {
+		this.patch({ name: valueFrom(event) });
 	}
 
 	protected onBucket(event: Event): void {

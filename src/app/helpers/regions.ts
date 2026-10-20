@@ -1,4 +1,4 @@
-export type ProviderId = 'backblaze' | 'wasabi' | 's3' | 'ftp';
+export type ProviderId = 'backblaze' | 'wasabi' | 's3' | 'r2' | 'spaces' | 'minio' | 'ftp';
 
 export interface StorageRegion {
 	id: string;
@@ -6,7 +6,15 @@ export interface StorageRegion {
 	endpoint: string;
 }
 
-export const PROVIDERS: readonly ProviderId[] = ['backblaze', 'wasabi', 's3', 'ftp'];
+export const PROVIDERS: readonly ProviderId[] = [
+	'backblaze',
+	'wasabi',
+	's3',
+	'r2',
+	'spaces',
+	'minio',
+	'ftp',
+];
 
 const BACKBLAZE_REGIONS: readonly StorageRegion[] = [
 	{ id: 'us-west-000', label: 'US West', endpoint: 's3.us-west-000.backblazeb2.com' },
@@ -147,10 +155,41 @@ const S3_REGIONS: readonly StorageRegion[] = [
 	{ id: 'il-central-1', label: 'Israel (Tel Aviv)', endpoint: 's3.il-central-1.amazonaws.com' },
 ];
 
+const R2_REGIONS: readonly StorageRegion[] = [
+	{
+		id: 'auto',
+		label: 'Automatic',
+		endpoint: '<account-id>.r2.cloudflarestorage.com',
+	},
+	{ id: 'wnam', label: 'Western North America', endpoint: '<account-id>.r2.cloudflarestorage.com' },
+	{ id: 'enam', label: 'Eastern North America', endpoint: '<account-id>.r2.cloudflarestorage.com' },
+	{ id: 'weur', label: 'Western Europe', endpoint: '<account-id>.r2.cloudflarestorage.com' },
+	{ id: 'eeur', label: 'Eastern Europe', endpoint: '<account-id>.r2.cloudflarestorage.com' },
+	{ id: 'apac', label: 'Asia Pacific', endpoint: '<account-id>.r2.cloudflarestorage.com' },
+];
+
+const SPACES_REGIONS: readonly StorageRegion[] = [
+	{ id: 'nyc3', label: 'New York', endpoint: 'nyc3.digitaloceanspaces.com' },
+	{ id: 'sfo3', label: 'San Francisco', endpoint: 'sfo3.digitaloceanspaces.com' },
+	{ id: 'ams3', label: 'Amsterdam', endpoint: 'ams3.digitaloceanspaces.com' },
+	{ id: 'sgp1', label: 'Singapore', endpoint: 'sgp1.digitaloceanspaces.com' },
+	{ id: 'fra1', label: 'Frankfurt', endpoint: 'fra1.digitaloceanspaces.com' },
+	{ id: 'tor1', label: 'Toronto', endpoint: 'tor1.digitaloceanspaces.com' },
+	{ id: 'blr1', label: 'Bangalore', endpoint: 'blr1.digitaloceanspaces.com' },
+	{ id: 'syd1', label: 'Sydney', endpoint: 'syd1.digitaloceanspaces.com' },
+];
+
+const MINIO_REGIONS: readonly StorageRegion[] = [
+	{ id: 'us-east-1', label: 'Default', endpoint: 'localhost:9000' },
+];
+
 const REGIONS: Record<Exclude<ProviderId, 'ftp'>, readonly StorageRegion[]> = {
 	backblaze: BACKBLAZE_REGIONS,
 	wasabi: WASABI_REGIONS,
 	s3: S3_REGIONS,
+	r2: R2_REGIONS,
+	spaces: SPACES_REGIONS,
+	minio: MINIO_REGIONS,
 };
 
 const CLUSTER_TO_REGION: Record<string, string> = {
@@ -169,9 +208,19 @@ export function isProvider(value: string): value is ProviderId {
 
 export function providerLabelKey(
 	provider: string,
-): 'providerBackblaze' | 'providerWasabi' | 'providerS3' | 'providerFtp' {
+):
+	| 'providerBackblaze'
+	| 'providerWasabi'
+	| 'providerS3'
+	| 'providerR2'
+	| 'providerSpaces'
+	| 'providerMinio'
+	| 'providerFtp' {
 	if (provider === 'wasabi') return 'providerWasabi';
 	if (provider === 's3') return 'providerS3';
+	if (provider === 'r2') return 'providerR2';
+	if (provider === 'spaces') return 'providerSpaces';
+	if (provider === 'minio') return 'providerMinio';
 	if (provider === 'ftp') return 'providerFtp';
 
 	return 'providerBackblaze';
@@ -187,7 +236,16 @@ export function defaultRegion(provider: ProviderId): StorageRegion {
 	if (provider === 'ftp') return { id: '21', label: '21', endpoint: '' };
 
 	const regions = regionsFor(provider);
-	const preferred = provider === 'backblaze' ? 'us-west-004' : 'us-east-1';
+	const preferred =
+		provider === 'backblaze'
+			? 'us-west-004'
+			: provider === 'r2'
+				? 'auto'
+				: provider === 'spaces'
+					? 'nyc3'
+					: provider === 'minio'
+						? 'us-east-1'
+						: 'us-east-1';
 	return regions.find((region) => region.id === preferred) ?? regions[0];
 }
 
@@ -203,7 +261,7 @@ export function regionById(provider: ProviderId, id: string): StorageRegion | un
 }
 
 export function isKnownEndpoint(endpoint: string): boolean {
-	return (['backblaze', 'wasabi', 's3'] as const).some((provider) =>
+	return (['backblaze', 'wasabi', 's3', 'r2', 'spaces', 'minio'] as const).some((provider) =>
 		regionsFor(provider).some((region) => region.endpoint === endpoint),
 	);
 }
@@ -217,10 +275,14 @@ export function normalizeEndpoint(value: string): string {
 }
 
 export function connectionTitle(connection: {
+	name?: string;
 	provider: string;
 	bucket: string;
 	endpoint: string;
 }): string {
+	const label = connection.name?.trim();
+	if (label) return label;
+
 	if (connection.provider !== 'ftp') return connection.bucket;
 
 	const path = connection.bucket.replace(/^\/+|\/+$/g, '');
@@ -263,5 +325,8 @@ export function objectUrl(
 		return `https://${connection.bucket}.${connection.endpoint}/${encodedKey}`;
 	}
 
-	return `https://${connection.endpoint}/${encodeURIComponent(connection.bucket)}/${encodedKey}`;
+	const scheme = connection.provider === 'minio' && connection.endpoint.includes('localhost')
+		? 'http'
+		: 'https';
+	return `${scheme}://${connection.endpoint}/${encodeURIComponent(connection.bucket)}/${encodedKey}`;
 }

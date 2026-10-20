@@ -69,6 +69,31 @@ export async function listObjects(connection, prefix, token, delimited, maxKeys,
 	return { entries, nextToken };
 }
 
+export async function objectStats(connection, prefix, signal, list = listObjects) {
+	let token = null;
+	let fileCount = 0;
+	let totalBytes = 0;
+	let lastModified = null;
+	do {
+		const page = await list(connection, prefix, token, false, 1000, signal);
+		for (const entry of page.entries) {
+			if (entry.kind !== 'file') continue;
+
+			fileCount += 1;
+			totalBytes += entry.size ?? 0;
+			if (
+				entry.lastModified &&
+				(!lastModified || entry.lastModified.localeCompare(lastModified) > 0)
+			) {
+				lastModified = entry.lastModified;
+			}
+		}
+		token = page.nextToken;
+	} while (token);
+
+	return { fileCount, totalBytes, lastModified };
+}
+
 const EXTENSIONS = {
 	image: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif', 'heic', 'bmp', 'ico'],
 	video: ['mp4', 'mov', 'mkv', 'webm', 'avi', 'm4v'],
@@ -320,7 +345,15 @@ function requestUrl(connection, path) {
 		return `https://${connection.bucket}.${connection.endpoint}${path}`;
 	}
 
-	return `https://${connection.endpoint}/${encodeURIComponent(connection.bucket)}${path}`;
+	const scheme =
+		connection.provider === 'minio' && String(connection.endpoint).includes('localhost')
+			? 'http'
+			: 'https';
+	return `${scheme}://${connection.endpoint}/${encodeURIComponent(connection.bucket)}${path}`;
+}
+
+export function objectUrlForTests(connection, path) {
+	return requestUrl(connection, path);
 }
 
 function objectPath(key) {
